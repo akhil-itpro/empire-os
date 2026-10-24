@@ -119,6 +119,20 @@ test.describe("the hook: landing to sign-up", () => {
     await expect(page.getByRole("heading", { name: /I'll show up for 90 days/ })).toBeVisible();
   });
 
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+    test("the oath is a single tap and the checklist shows at once", async ({ page }) => {
+      await page.goto("/quiz");
+      await pick(page, "21–24");
+      await answerQuiz(page);
+      await expect(page.getByText("Shaping Act I for The Grinder, done")).toBeAttached();
+      await page.getByRole("button", { name: "See your archetype" }).click();
+      await page.getByRole("button", { name: "Start Season 1" }).click();
+      await page.getByRole("button", { name: "Take the oath" }).click();
+      await expect(page.getByRole("heading", { name: "Save your plan to start Day 1." })).toBeVisible();
+    });
+  });
+
   test("two different students get different archetypes", async ({ page }) => {
     await page.goto("/quiz");
     await pick(page, "25–28");

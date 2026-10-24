@@ -48,13 +48,13 @@ Done when: `npm test` and `npm run test:rls` pass.
 
 Read: `docs/PRODUCT.md` section 3, `Main`, `Quiz` and `Reveal` screens.
 
-- [ ] Landing page matching `Main.dc.html`
-- [ ] 18+ check; "Under 18" stores nothing
-- [ ] Eleven quiz questions with progress ticks, back, auto-advance; answers in local state
-- [ ] Two reflection screens with true arithmetic
-- [ ] "Building your season" checklist using real answers
-- [ ] Archetype reveal from `previewPlan`, matching `Reveal.dc.html`
-- [ ] Oath press-and-hold with reduced-motion fallback
+- [x] Landing page matching `Main.dc.html`
+- [x] 18+ check; "Under 18" stores nothing
+- [x] Eleven quiz questions with progress ticks, back, auto-advance; answers in local state
+- [x] Two reflection screens with true arithmetic
+- [x] "Building your season" checklist using real answers
+- [x] Archetype reveal from `previewPlan`, matching `Reveal.dc.html`
+- [x] Oath press-and-hold with reduced-motion fallback
 - [ ] Sign-up with email one-time code and Google; `startSeason` saves answers; HQ opens with mission 1 highlighted
 - [ ] Events logged: `landing_view`, `quiz_start`, `quiz_step`, `quiz_complete`, `reveal_view`, `oath_done`, `signup_done`, `first_mission_done`
 - [ ] Playwright test runs the whole funnel on a 390px viewport
