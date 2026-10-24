@@ -1,0 +1,9 @@
+# secrets: never commit these (only .env.example, which holds names, is kept)
+.env*
+!.env.example
+
+# the original kit download (already unpacked into this folder)
+/empire-os-kit.zip
+
+# personal Claude Code settings
+.claude/settings.local.json

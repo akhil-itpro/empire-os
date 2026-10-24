@@ -1,0 +1,13 @@
+# Store text files with LF line endings so Windows, Mac and Codex's Linux sandbox all agree.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.pdf binary
