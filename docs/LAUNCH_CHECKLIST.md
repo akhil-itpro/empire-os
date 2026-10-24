@@ -13,15 +13,15 @@ Security (from `/security-check`)
 - [ ] RLS on every personal table
 - [ ] Two-user isolation test passes
 - [ ] Students can't write XP, streaks, passes, rewards or roles
-- [ ] No secrets in the browser bundle; `.env.local` never committed
-- [ ] Script and very long input tested in name and journal
-- [ ] `npm audit` has no high or critical issues in production dependencies
+- [x] No secrets in the browser bundle; `.env.local` never committed
+- [x] Script and very long input tested in name and journal
+- [x] `npm audit` has no high or critical issues in production dependencies
 
 Privacy
 - [ ] Privacy Policy and Terms drafts published and linked
 - [ ] Data export works
 - [ ] Account delete works and removes the login
-- [ ] No ad pixels, session recording or third-party trackers
+- [x] No ad pixels, session recording or third-party trackers
 
 ## Before the first college pilot (end of Phase 7)
 
@@ -45,3 +45,20 @@ Privacy
 ## Before the data-protection duties start (13 May 2027)
 
 - [ ] Consent notices, rights requests and breach steps reviewed against the DPDP Rules with a lawyer
+
+## Security check results
+
+### 2026-10-24, Claude (before Supabase exists)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| 1. RLS everywhere | Partly verified | `tests/unit/db.test.ts` runs every migration on PGlite (real PostgreSQL) with Supabase's roles: RLS is on for every table, owner-only reads hold. Supabase security advisors not run yet (no project). |
+| 2. Two-user isolation | Not run | `npm run test:rls` is ready; needs `.env.local`. PGlite version passes. |
+| 3. Protected writes | Partly verified | On PGlite, a signed-in student can't update missions, XP, stats, entitlements, roles or trial dates, or insert XP. Recheck on Supabase with `npm run test:rls`. |
+| 4. Limits on the server | Verified (logic) | `tests/unit/season-service.test.ts`: one swap a day, Free gets one mission, done/skipped missions can't change, other students' missions refused. Playwright covers the same through the UI in local test mode. |
+| 5. Secrets | Pass | `npm run build`, then searched `.next/static`: no `SUPABASE_SECRET`, `RAZORPAY_KEY_SECRET` or real key values. `sb_secret_` appears only as a prefix check inside the Supabase library. `git log --all -- .env.local` prints nothing; `.env.local` is ignored. |
+| 6. Input | Pass | `tests/e2e/trust.spec.ts`: `<script>` in the journal is shown as text and runs nothing; the journal stops at 280 characters and the server refuses longer; a script as a first name is refused. |
+| 7. Dependencies | Pass | `npm audit --omit=dev`: 0 vulnerabilities. |
+| 8. College HQ | Not built yet | Phase 7. |
+| 9. Payments | Not built yet | Phase 10. |
+| Trackers | Pass | No third-party scripts, pixels or session recording in the source. |
