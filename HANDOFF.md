@@ -8,7 +8,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Current phase and step
 
-Phase 0: Setup and first deploy (`/kickoff`). Steps 1 to 3 are done; step 4 (GitHub) is next. 2 of 6 Phase 0 boxes are ticked in `docs/BUILD_PLAN.md`.
+Phase 0: Setup and first deploy (`/kickoff`). Steps 1 to 4 are done; step 5 (Supabase) is next. 3 of 6 Phase 0 boxes are ticked in `docs/BUILD_PLAN.md`.
 
 ## What this session did
 
@@ -19,21 +19,22 @@ Phase 0: Setup and first deploy (`/kickoff`). Steps 1 to 3 are done; step 4 (Git
 - Put the colour tokens from `docs/DESIGN.md` into `app/globals.css`; loaded Schibsted Grotesk, Big Shoulders and Big Shoulders Stencil with `next/font` (the font names changed; see notes). Replaced the starter page with a field-coloured EMPIRE OS wordmark page.
 - Added scripts: `typecheck` (`next typegen && tsc --noEmit`), `test` (Vitest, no tests yet), `test:e2e` (Playwright at 390 x 844, one passing test for the wordmark), `test:rls` (placeholder until Phase 2).
 - Verified: `lint`, `typecheck`, `test`, `test:e2e`, `test:rls` and `build` all pass; looked at a 390 x 844 screenshot of the page.
+- Later the same day: re-ran all checks and the app (all pass, no browser errors). Signed the GitHub CLI in as `akhil-itpro`, created the private repository https://github.com/akhil-itpro/empire-os and pushed `main`.
 
 ## Next step
 
-Kickoff step 4: create a private GitHub repository named `empire-os` and push. `gh` is installed but not signed in. Once the founder has signed in (`gh auth status` shows a logged-in account), run `gh repo create empire-os --private --source . --remote origin --push`, then push any tags. Then kickoff step 5 (Supabase) and step 6 (Vercel).
+Kickoff step 5 (Supabase), then step 6 (Vercel). The founder asked to build the complete app (all phases); Claude showed the whole-app plan and is waiting on two answers (see Open questions) before starting Phase 1.
 
 ## Waiting on the founder
 
-- [ ] Fully close and reopen VS Code, so its terminal and Claude Code can find the newly installed Git, Node.js and GitHub CLI.
-- [ ] Create a free GitHub account if needed, then sign in the GitHub CLI: in VS Code's terminal (`Ctrl+backtick`) type `gh auth login` and choose GitHub.com, HTTPS, Yes, "Login with a web browser".
-- [ ] Later (kickoff step 5): create the Supabase project `empire-os-dev` in South Asia (Mumbai), copy `.env.example` to a new file named `.env.local` and paste the three values in, and tell Claude the Project ID (not secret) for `.mcp.json`.
+- [ ] Kickoff step 5: create the Supabase project `empire-os-dev` in South Asia (Mumbai), copy `.env.example` to a new file named `.env.local` and paste the three values in, and tell Claude the Project ID (not secret) for `.mcp.json`.
 - [ ] Later (kickoff step 6): import the repository into Vercel and add the same three environment variables.
 - [ ] Confirm the five-line product summary Claude gave at kickoff step 2.
 
 ## Open questions
 
+- The founder asked for "a portfolio as well". Unclear whether that means a personal portfolio website, a GitHub profile set up as a portfolio, or a feature inside EMPIRE OS. Asked; waiting.
+- May Claude build the phases back to back without stopping for approval at each one (still stopping when the founder must act)? Asked; waiting.
 - Git author name is "Akhil". If the founder wants their full name on commits, run `git config --global user.name "Full Name"`.
 
 ## Known problems
@@ -48,4 +49,4 @@ Kickoff step 4: create a private GitHub repository named `empire-os` and push. `
 - Phase 1 head start: the tokens are already in `app/globals.css` exactly as listed, and fonts load with `next/font`. Phase 1's first box still needs checking against `System.dc.html` before it is ticked.
 - `next dev` maintains the Next.js block at the end of `AGENTS.md`; keep it and commit it.
 - Node and Git were installed during this session, so shells started before that don't have them on PATH. If `git` or `node` isn't found, restart VS Code, or in PowerShell run: `$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')`.
-- No GitHub remote yet, so nothing is backed up off this laptop. Pushing is the most urgent next step.
+- GitHub remote `origin` is https://github.com/akhil-itpro/empire-os (private). Push after every commit.

@@ -12,7 +12,7 @@ Read: `CLAUDE.md`. Run `/kickoff` for this phase.
 
 - [x] Next.js app scaffolded in this folder (TypeScript strict, App Router, Tailwind, ESLint), kit files kept
 - [x] Scripts exist and pass: `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `test:rls` (the last three may be placeholders that print "not set up yet")
-- [ ] Private GitHub repository with the first commit pushed
+- [x] Private GitHub repository with the first commit pushed
 - [ ] Supabase dev project created (Mumbai region); `.env.local` filled by the founder; `.env.example` lists names only
 - [ ] Supabase MCP server connected and authenticated
 - [ ] Vercel project imported from GitHub, env vars added, live URL shows the EMPIRE OS wordmark
