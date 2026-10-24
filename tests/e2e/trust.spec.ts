@@ -17,7 +17,10 @@ test.describe("trust layer", () => {
 
   test("Download my data returns everything linked to the student", async ({ page }) => {
     await startSeason(page);
+    // The stamp shows at once; wait for the server to save the mission and its XP.
+    const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/hq"));
     await page.getByRole("button", { name: /^Mark done:/ }).first().click();
+    await saved;
     await expect(page.getByText("1 of 3 done")).toBeVisible();
     const res = await page.request.get("/me/data/export");
     expect(res.ok()).toBe(true);

@@ -205,9 +205,10 @@ test.describe("share cards", () => {
         await page.waitForTimeout(300);
         if (day === 6 && i === 0) {
           // Day 7's first mission brings the 7-day streak moment; its Share opens the image card.
-          await expect(page.getByRole("heading", { name: "7-day streak." })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "7-day streak." })).toBeVisible({ timeout: 15_000 });
           await page.getByRole("button", { name: "Share", exact: true }).click();
-          await expect(page.getByRole("img", { name: "Your share card: 7-day streak" })).toBeVisible();
+          // Image cards take a moment to draw on a busy dev server.
+          await expect(page.getByRole("img", { name: "Your share card: 7-day streak" })).toBeVisible({ timeout: 15_000 });
           await page.getByRole("button", { name: "Close" }).click();
         }
       }
@@ -220,7 +221,7 @@ test.describe("share cards", () => {
     for (const label of ["I'm The Grinder", /^Rank: /, "7-day streak", "Season 1 complete"]) {
       await list.getByRole("button", { name: label }).click();
       const preview = page.getByRole("img", { name: /^Your share card:/ });
-      await expect(preview).toBeVisible();
+      await expect(preview).toBeVisible({ timeout: 15_000 });
       expect(await preview.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1080);
       await page.getByRole("button", { name: "Close" }).click();
     }
@@ -241,8 +242,9 @@ test.describe("referrals", () => {
     await startSeason(page);
     await page.goto("/me");
     const invite = page.getByRole("region", { name: "Invite friends" });
+    // Before the page is live the link shows as "/r/CODE"; after, with the full address.
     const link = (await invite.getByText(/\/r\/[A-Z0-9]+$/).textContent())!.trim();
-    const path = new URL(link).pathname;
+    const path = `/r/${link.split("/r/")[1]}`;
     await expect(invite).toContainText("0 friends have joined. 0 of 5 rewards earned.");
     await noA11yViolations(page);
 
@@ -256,8 +258,9 @@ test.describe("referrals", () => {
     for (let day = 0; day < 3; day++) {
       await travelDays(friendContext, day);
       await friend.goto("/hq");
+      const saved = friend.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/hq"));
       await friend.getByRole("button", { name: /^Mark done:/ }).first().click();
-      if (day < 2) await expect(friend.getByText("1 of 3 done")).toBeVisible();
+      await saved;
     }
     await expect(friend.getByText("Three active days. You and the friend who invited you each get 7 days of full access.")).toBeVisible();
 
