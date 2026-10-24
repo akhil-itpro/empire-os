@@ -84,8 +84,8 @@ Read: `docs/PRODUCT.md` sections 10 and 11, `docs/LAUNCH_CHECKLIST.md`.
 - [x] Links in the landing footer, sign-up screen and Me
 - [x] Download my data (JSON) and Delete my account (type DELETE), both showing the true result (verified in local test mode; recheck on Supabase)
 - [ ] `/security-check` run; every failure fixed; results recorded in `docs/LAUNCH_CHECKLIST.md`
-- [ ] Founder HQ at `/founder` (roles table, server-written): funnel, Day-1/7/30 return, pillars, skips, paywall views, reservations, shares, referrals, launch checklist
-- [ ] A normal user sees nothing at `/founder`
+- [x] Founder HQ at `/founder` (roles table, server-written): funnel, Day-1/7/30 return, pillars, skips, paywall views, reservations, shares, referrals, launch checklist (verified in local test mode; College HQ numbers are a labelled placeholder until Phase 7)
+- [x] A normal user sees nothing at `/founder` (verified in local test mode)
 
 Done when: the founder can invite 10 friends without risking their data.
 

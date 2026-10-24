@@ -2,6 +2,7 @@
 // It mirrors the database rules that matter: one live mission per slot per day,
 // and one XP grant per kind + ref.
 import type { Entitlement } from "@/lib/game/access";
+import { LAUNCH_ITEMS, type ChecklistItem, type FounderSnapshot } from "./founder";
 import type {
   EventName,
   PendingSettings,
@@ -22,7 +23,9 @@ export class MemoryStore implements SeasonStore {
   stats = new Map<string, StatsRow>();
   grants: (Entitlement & { userId: string })[] = [];
   referrals: { referrerId: string; referredId: string }[] = [];
-  events: { name: EventName; userId: string; props?: Record<string, unknown> }[] = [];
+  events: { name: EventName; userId: string; props?: Record<string, unknown>; at: Date }[] = [];
+  reservations: { userId: string; priceInr: number; founderPrice: boolean }[] = [];
+  checklist: ChecklistItem[] = LAUNCH_ITEMS.map((i) => ({ ...i, done: false }));
   founders = new Set<string>();
   journal: { userId: string; localDate: string; body: string }[] = [];
   private nextId = 1;
@@ -121,7 +124,7 @@ export class MemoryStore implements SeasonStore {
   }
 
   async logEvent(name: EventName, userId: string, props?: Record<string, unknown>) {
-    this.events.push({ name, userId, props });
+    this.events.push({ name, userId, props, at: new Date() });
   }
 
   async isFounder(userId: string) {
@@ -185,5 +188,30 @@ export class MemoryStore implements SeasonStore {
 
   async userExists(userId: string) {
     return this.profiles.has(userId);
+  }
+
+  async founderSnapshot(since: string): Promise<FounderSnapshot> {
+    return {
+      signups: [...this.profiles.values()]
+        .filter((p) => p.seasonStart >= since)
+        .map((p) => ({ userId: p.id, signupDate: p.seasonStart })),
+      events: this.events.map((e) => ({ name: e.name, userId: e.userId || null, anonId: null, props: e.props ?? {}, at: e.at })),
+      missions: this.missions
+        .filter((m) => m.localDate >= since)
+        .map((m) => ({ userId: m.userId, localDate: m.localDate, pillar: m.pillar, missionId: m.missionId, status: m.status, skipReason: m.skipReason })),
+      reservations: {
+        total: this.reservations.length,
+        founderPrice: this.reservations.filter((r) => r.founderPrice).length,
+      },
+      referralSignups: this.referrals.length,
+    };
+  }
+
+  async listChecklist() {
+    return this.checklist.map((c) => ({ ...c }));
+  }
+
+  async setChecklistItem(id: string, done: boolean) {
+    this.checklist = this.checklist.map((c) => (c.id === id ? { ...c, done } : c));
   }
 }

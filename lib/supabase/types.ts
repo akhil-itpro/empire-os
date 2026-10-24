@@ -148,6 +148,16 @@ export type MissionLibraryRow = {
 
 export type PackRow = { id: string; name: string; description: string };
 
+export type LaunchChecklistRow = {
+  id: string;
+  section: string;
+  label: string;
+  position: number;
+  done: boolean;
+  done_at: string | null;
+  done_by: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -164,6 +174,7 @@ export type Database = {
       events: Table<EventRow, "id" | "user_id" | "anon_id" | "props" | "created_at">;
       mission_library: Table<MissionLibraryRow, "archetypes" | "tags" | "pack" | "active">;
       packs: Table<PackRow>;
+      launch_checklist: Table<LaunchChecklistRow, "done" | "done_at" | "done_by">;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

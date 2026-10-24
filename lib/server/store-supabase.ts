@@ -4,7 +4,9 @@ import type { Entitlement } from "@/lib/game/access";
 import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
+import { addDays } from "@/lib/game/dates";
 import type { Database, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
+import type { ChecklistItem, FounderSnapshot } from "./founder";
 import type {
   EventName,
   PendingSettings,
@@ -314,6 +316,50 @@ export class SupabaseSeasonStore implements SeasonStore {
     const { data } = await this.db.auth.admin.getUserById(userId);
     const profile = await this.getProfile(userId);
     return Boolean(data.user) || Boolean(profile);
+  }
+
+  async founderSnapshot(since: string): Promise<FounderSnapshot> {
+    // Early-stage sizes; move these to SQL views once there are tens of thousands of rows.
+    const cohortStart = addDays(since, -31);
+    const [profiles, events, missions, reservations, referrals] = await Promise.all([
+      this.db.from("profiles").select("id, season_start").gte("season_start", cohortStart),
+      this.db.from("events").select("name, user_id, anon_id, props, created_at").gte("created_at", `${since}T00:00:00Z`).limit(50000),
+      this.db.from("user_missions").select("user_id, local_date, pillar, mission_id, status, skip_reason").gte("local_date", cohortStart).limit(100000),
+      this.db.from("reservations").select("founder_price"),
+      this.db.from("referrals").select("id", { count: "exact", head: true }).gte("created_at", `${since}T00:00:00Z`),
+    ]);
+    for (const r of [profiles, events, missions, reservations]) if (r.error) fail("founderSnapshot", r.error);
+    return {
+      signups: (profiles.data ?? []).map((p) => ({ userId: p.id, signupDate: p.season_start })),
+      events: (events.data ?? []).map((e) => ({ name: e.name, userId: e.user_id, anonId: e.anon_id, props: e.props ?? {}, at: new Date(e.created_at) })),
+      missions: (missions.data ?? []).map((m) => ({
+        userId: m.user_id,
+        localDate: m.local_date,
+        pillar: m.pillar as Pillar,
+        missionId: m.mission_id,
+        status: m.status,
+        skipReason: m.skip_reason,
+      })),
+      reservations: {
+        total: reservations.data?.length ?? 0,
+        founderPrice: (reservations.data ?? []).filter((r) => r.founder_price).length,
+      },
+      referralSignups: referrals.count ?? 0,
+    };
+  }
+
+  async listChecklist(): Promise<ChecklistItem[]> {
+    const { data, error } = await this.db.from("launch_checklist").select("id, section, label, done").order("position");
+    if (error) fail("listChecklist", error);
+    return data ?? [];
+  }
+
+  async setChecklistItem(id: string, done: boolean, userId: string) {
+    const { error } = await this.db
+      .from("launch_checklist")
+      .update({ done, done_at: done ? new Date().toISOString() : null, done_by: done ? userId : null })
+      .eq("id", id);
+    if (error) fail("setChecklistItem", error);
   }
 
   async isFounder(userId: string) {

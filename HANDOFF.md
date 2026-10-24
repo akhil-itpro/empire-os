@@ -18,7 +18,7 @@ The founder approved building every phase back to back ("I want the complete app
 
 ## Next step
 
-Phase 5 remainder: Founder HQ at `/founder` (new migration for `launch_checklist`; read-only metric cards from a founder snapshot; launch checklist checkboxes saved in the database; normal users see nothing), then run `/security-check` (needs Supabase for checks 1 to 3) and record results in `docs/LAUNCH_CHECKLIST.md`. Privacy and Terms drafts, export and delete are done.
+Phase 5 last box: run `/security-check` and record results in `docs/LAUNCH_CHECKLIST.md` (checks 1 to 4 need Supabase; 5 to 7 can run now). Founder HQ is built (`app/founder`, metrics in `lib/server/founder.ts`, migration `20261024120000_launch_checklist.sql`). To make the founder an admin once Supabase exists: `insert into public.roles (user_id, role) values ('<founder auth user id>', 'founder');` in the SQL Editor. Then Phase 6 (money and growth, reserve mode).
 
 ## Waiting on the founder
 

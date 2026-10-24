@@ -6,6 +6,7 @@ import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
 import type { PlanSettings } from "@/lib/plan-engine/select";
+import type { ChecklistItem, FounderSnapshot } from "./founder";
 
 export type MissionStatus = "assigned" | "done" | "skipped" | "swapped";
 export type XpKind = "mission" | "day_bonus" | "boss";
@@ -123,4 +124,9 @@ export interface SeasonStore {
   deleteUser(userId: string): Promise<void>;
   /** True if any login or profile still exists for the user (to report the true result). */
   userExists(userId: string): Promise<boolean>;
+
+  /** Founder HQ only (the caller checks the founder role): raw rows from `since` on. */
+  founderSnapshot(since: LocalDate): Promise<FounderSnapshot>;
+  listChecklist(): Promise<ChecklistItem[]>;
+  setChecklistItem(id: string, done: boolean, userId: string): Promise<void>;
 }
