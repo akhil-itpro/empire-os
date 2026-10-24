@@ -1,0 +1,394 @@
+// The student's season on the server: start it, give each day's missions, and
+// complete, undo, skip or swap a mission. Every function takes the user id from
+// the caller (which read it from the session) and never trusts the browser for
+// XP, dates, status or limits. Times come from `now`, so tests and the founder's
+// time-travel switch can move the clock.
+import { z } from "zod";
+import { hasFullAccess, trialEndsAt, type Entitlement } from "@/lib/game/access";
+import { addDays, isValidTimeZone, localDate, seasonPosition, type LocalDate } from "@/lib/game/dates";
+import {
+  DAY_COMPLETE_BONUS,
+  SKIP_REASONS,
+  STREAK_MILESTONES,
+  SWAPS_PER_DAY,
+  XP_BY_DIFFICULTY,
+  type RankName,
+  type SkipReason,
+} from "@/lib/game/rules";
+import { computeStreak, streakMilestone, type StreakState } from "@/lib/game/streak";
+import { rankFor, rankUp } from "@/lib/game/xp";
+import { PILLARS, type Pillar } from "@/lib/pillars";
+import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
+import { archetypeFor } from "@/lib/plan-engine/archetype";
+import { PLAN_CONFIG } from "@/lib/plan-engine/config";
+import { MISSIONS, type Mission } from "@/lib/plan-engine/missions";
+import { effectiveMinutes, selectDailyMissions, type PlanSettings } from "@/lib/plan-engine/select";
+import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
+
+export type Deps = { store: SeasonStore; now: Date; library?: Mission[] };
+
+export type ErrorCode =
+  | "invalid_input"
+  | "not_started"
+  | "not_found"
+  | "not_today"
+  | "swap_limit"
+  | "no_replacement"
+  | "free_limit"
+  | "season_finished";
+
+export type Result<T> = { ok: true; data: T } | { ok: false; error: ErrorCode; message: string };
+
+const fail = (error: ErrorCode, message: string): { ok: false; error: ErrorCode; message: string } => ({
+  ok: false,
+  error,
+  message,
+});
+
+const idSchema = z.uuid();
+
+// ---------------------------------------------------------------------------
+// Start a season
+// ---------------------------------------------------------------------------
+
+// No 0/O or 1/I, so codes are easy to read aloud.
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function randomCode(length = 8): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+}
+
+export type StartOptions = { timeZone?: string; referralCode?: string };
+
+export async function startSeason(
+  deps: Deps,
+  userId: string,
+  input: unknown,
+  options: StartOptions = {},
+): Promise<Result<{ created: boolean }>> {
+  const parsed = answersSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail("invalid_input", "Some answers are missing or not on the list. Go back and check them.");
+  }
+  const answers = parsed.data as Answers;
+  const { store, now } = deps;
+
+  if (await store.getProfile(userId)) return { ok: true, data: { created: false } };
+
+  const timeZone = options.timeZone && isValidTimeZone(options.timeZone) ? options.timeZone : "Asia/Kolkata";
+  let code = randomCode();
+  for (let i = 0; i < 5 && (await store.isReferralCodeTaken(code)); i++) code = randomCode();
+
+  const outcome = await store.insertProfile({
+    id: userId,
+    firstName: answers.firstName,
+    answers,
+    archetype: archetypeFor(answers.goal),
+    timeZone,
+    seasonNumber: 1,
+    seasonStart: localDate(now, timeZone),
+    trialEndsAt: trialEndsAt(now),
+    referralCode: code,
+    adultConfirmedAt: now,
+  });
+  if (outcome === "exists") return { ok: true, data: { created: false } };
+
+  const referral = options.referralCode?.trim().toUpperCase();
+  if (referral && /^[A-Z0-9]{6,10}$/.test(referral)) {
+    const referrerId = await store.findUserIdByReferralCode(referral);
+    if (referrerId && referrerId !== userId) await store.insertReferral(referrerId, userId);
+  }
+
+  await ensureToday(deps, userId);
+  await recomputeStats(deps, userId);
+  await store.logEvent("signup_done", userId, { archetype: archetypeFor(answers.goal) });
+  return { ok: true, data: { created: true } };
+}
+
+// ---------------------------------------------------------------------------
+// Today's missions
+// ---------------------------------------------------------------------------
+
+export type Today = {
+  profile: Profile;
+  today: LocalDate;
+  day: number;
+  week: number;
+  act: 1 | 2 | 3;
+  seasonFinished: boolean;
+  fullAccess: boolean;
+  /** Today's live missions (not swapped), in slot order. */
+  missions: UserMission[];
+  swapsLeft: number;
+};
+
+/** The settings for a date: Me edits apply from the day after they were made. */
+export function settingsOn(profile: Profile, date: LocalDate): PlanSettings {
+  if (profile.pendingSettings && profile.pendingFrom && date >= profile.pendingFrom) {
+    return profile.pendingSettings;
+  }
+  return profile.answers;
+}
+
+function live(missions: UserMission[]): UserMission[] {
+  return missions.filter((m) => m.status !== "swapped").sort((a, b) => a.slot - b.slot);
+}
+
+async function loadToday(deps: Deps, profile: Profile, entitlements: Entitlement[]): Promise<Today> {
+  const today = localDate(deps.now, profile.timeZone);
+  const pos = seasonPosition(profile.seasonStart, today);
+  const rows = await deps.store.listMissions(profile.id, today, today);
+  const swapped = rows.filter((m) => m.status === "swapped").length;
+  return {
+    profile,
+    today,
+    day: pos.day,
+    week: pos.week,
+    act: pos.act,
+    seasonFinished: pos.finished,
+    fullAccess: hasFullAccess(deps.now, profile.trialEndsAt, entitlements),
+    missions: live(rows),
+    swapsLeft: Math.max(0, SWAPS_PER_DAY - swapped),
+  };
+}
+
+function toRow(userId: string, today: LocalDate, slot: number, mission: Mission): NewUserMission {
+  return {
+    userId,
+    localDate: today,
+    slot,
+    missionId: mission.id,
+    pillar: mission.pillar,
+    minutes: mission.minutes,
+    xp: XP_BY_DIFFICULTY[mission.difficulty],
+  };
+}
+
+async function recentHistory(deps: Deps, userId: string, today: LocalDate) {
+  const rows = await deps.store.listMissions(userId, addDays(today, -PLAN_CONFIG.noRepeatDays), addDays(today, -1));
+  return rows.map((m) => ({ missionId: m.missionId, date: m.localDate }));
+}
+
+/**
+ * Returns today's missions, generating them once if the student has full access.
+ * Free students get theirs from chooseFreePillar. Safe to call on every visit.
+ */
+export async function ensureToday(deps: Deps, userId: string): Promise<Result<Today>> {
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const entitlements = await deps.store.entitlements(userId);
+  const state = await loadToday(deps, profile, entitlements);
+  if (state.seasonFinished || !state.fullAccess || state.missions.length > 0) {
+    return { ok: true, data: state };
+  }
+
+  const picked = selectDailyMissions(deps.library ?? MISSIONS, {
+    seed: userId,
+    date: state.today,
+    seasonDay: state.day,
+    week: state.week,
+    act: state.act,
+    archetype: profile.archetype,
+    settings: settingsOn(profile, state.today),
+    history: await recentHistory(deps, userId, state.today),
+  });
+  await deps.store.insertMissions(picked.map((p) => toRow(userId, state.today, p.slot, p.mission)));
+  return { ok: true, data: await loadToday(deps, profile, entitlements) };
+}
+
+/** Free plan after the trial: one mission a day, in the pillar the student picks. */
+export async function chooseFreePillar(deps: Deps, userId: string, pillar: unknown): Promise<Result<Today>> {
+  if (!PILLARS.includes(pillar as Pillar)) return fail("invalid_input", "Pick one of the four pillars.");
+  const current = await ensureToday(deps, userId);
+  if (!current.ok) return current;
+  const state = current.data;
+  if (state.seasonFinished) return fail("season_finished", "This season is complete.");
+  if (state.fullAccess || state.missions.length > 0) return current;
+
+  const settings = settingsOn(state.profile, state.today);
+  const picked = selectDailyMissions(deps.library ?? MISSIONS, {
+    seed: userId,
+    date: state.today,
+    seasonDay: state.day,
+    week: state.week,
+    act: state.act,
+    archetype: state.profile.archetype,
+    settings,
+    history: await recentHistory(deps, userId, state.today),
+    singlePillar: pillar as Pillar,
+  });
+  await deps.store.insertMissions(picked.map((p) => toRow(userId, state.today, 1, p.mission)));
+  return ensureToday(deps, userId);
+}
+
+// ---------------------------------------------------------------------------
+// Complete, undo, skip, swap
+// ---------------------------------------------------------------------------
+
+export type Progress = {
+  xpGained: number;
+  dayComplete: boolean;
+  totalXp: number;
+  rank: RankName;
+  rankUp: RankName | null;
+  streak: number;
+  streakState: StreakState;
+  streakMilestone: number | null;
+};
+
+export async function completeMission(deps: Deps, userId: string, missionRowId: unknown): Promise<Result<Progress>> {
+  if (!idSchema.safeParse(missionRowId).success) return fail("invalid_input", "That mission doesn't exist.");
+  const id = missionRowId as string;
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const today = localDate(deps.now, profile.timeZone);
+  const { store } = deps;
+
+  const xpBefore = await store.xpTotal(userId);
+  const daysBefore = await store.activeDays(userId);
+  const row = await store.updateMissionStatus(userId, id, today, ["assigned"], {
+    status: "done",
+    completedAt: deps.now,
+  });
+  if (!row) return fail("not_today", "Only today's open missions can be marked done.");
+
+  let xpGained = (await store.addXp(userId, "mission", row.id, row.xp)) ? row.xp : 0;
+  const todays = live(await store.listMissions(userId, today, today));
+  const dayComplete = todays.length > 0 && todays.every((m) => m.status === "done");
+  if (dayComplete && (await store.addXp(userId, "day_bonus", today, DAY_COMPLETE_BONUS))) {
+    xpGained += DAY_COMPLETE_BONUS;
+  }
+
+  const stats = await recomputeStats(deps, userId, profile);
+  await store.logEvent("mission_done", userId, { mission: row.missionId, pillar: row.pillar });
+  if (daysBefore.length === 0) await store.logEvent("first_mission_done", userId);
+  if (dayComplete) await store.logEvent("day_complete", userId);
+
+  return {
+    ok: true,
+    data: {
+      xpGained,
+      dayComplete,
+      totalXp: stats.xp,
+      rank: rankFor(stats.xp).rank,
+      rankUp: rankUp(xpBefore, stats.xp),
+      streak: stats.current,
+      streakState: stats.state,
+      streakMilestone: daysBefore.includes(today) ? null : streakMilestone(stats.current, STREAK_MILESTONES),
+    },
+  };
+}
+
+/** Takes back a mission marked done by mistake, today only, with its XP. */
+export async function undoMission(deps: Deps, userId: string, missionRowId: unknown): Promise<Result<{ totalXp: number }>> {
+  if (!idSchema.safeParse(missionRowId).success) return fail("invalid_input", "That mission doesn't exist.");
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const today = localDate(deps.now, profile.timeZone);
+
+  const row = await deps.store.updateMissionStatus(userId, missionRowId as string, today, ["done"], {
+    status: "assigned",
+    completedAt: null,
+  });
+  if (!row) return fail("not_today", "Only today's missions can be changed.");
+  await deps.store.removeXp(userId, "mission", row.id);
+  await deps.store.removeXp(userId, "day_bonus", today);
+  const stats = await recomputeStats(deps, userId, profile);
+  return { ok: true, data: { totalXp: stats.xp } };
+}
+
+export async function skipMission(deps: Deps, userId: string, missionRowId: unknown, reason: unknown): Promise<Result<{ skipped: true }>> {
+  if (!idSchema.safeParse(missionRowId).success) return fail("invalid_input", "That mission doesn't exist.");
+  if (!SKIP_REASONS.includes(reason as SkipReason)) return fail("invalid_input", "Pick a reason: no time, not relevant or too hard.");
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const today = localDate(deps.now, profile.timeZone);
+
+  const row = await deps.store.updateMissionStatus(userId, missionRowId as string, today, ["assigned"], {
+    status: "skipped",
+    skipReason: reason as string,
+  });
+  if (!row) return fail("not_today", "Only today's open missions can be skipped.");
+  await deps.store.logEvent("mission_skipped", userId, { mission: row.missionId, reason: reason as string });
+  return { ok: true, data: { skipped: true } };
+}
+
+/** Swaps an open mission for another in the same pillar. Once a day. */
+export async function swapMission(deps: Deps, userId: string, missionRowId: unknown): Promise<Result<{ mission: UserMission }>> {
+  if (!idSchema.safeParse(missionRowId).success) return fail("invalid_input", "That mission doesn't exist.");
+  const current = await ensureToday(deps, userId);
+  if (!current.ok) return current;
+  const state = current.data;
+  const target = state.missions.find((m) => m.id === missionRowId);
+  if (!target || target.status !== "assigned") return fail("not_today", "Only today's open missions can be swapped.");
+  if (state.swapsLeft <= 0) return fail("swap_limit", "You've used today's swap. You get a new one tomorrow.");
+
+  const settings = settingsOn(state.profile, state.today);
+  const allToday = await deps.store.listMissions(userId, state.today, state.today);
+  const usedMinutes = state.missions.filter((m) => m.id !== target.id).reduce((s, m) => s + m.minutes, 0);
+  const maxMinutes = Math.max(target.minutes, effectiveMinutes(settings.dailyMinutes) - usedMinutes);
+
+  const [replacement] = selectDailyMissions(deps.library ?? MISSIONS, {
+    seed: `${userId}|swap`,
+    date: state.today,
+    seasonDay: state.day,
+    week: state.week,
+    act: state.act,
+    archetype: state.profile.archetype,
+    settings,
+    history: await recentHistory(deps, userId, state.today),
+    singlePillar: target.pillar,
+    excludeIds: allToday.map((m) => m.missionId),
+    maxMinutes,
+  });
+  if (!replacement) {
+    return fail("no_replacement", "There's no other mission in this pillar that fits today. Try Skip instead.");
+  }
+
+  const swapped = await deps.store.updateMissionStatus(userId, target.id, state.today, ["assigned"], { status: "swapped" });
+  if (!swapped) return fail("not_today", "Only today's open missions can be swapped.");
+  await deps.store.insertMissions([toRow(userId, state.today, target.slot, replacement.mission)]);
+  await deps.store.logEvent("mission_swapped", userId, { from: target.missionId, to: replacement.mission.id });
+
+  const after = live(await deps.store.listMissions(userId, state.today, state.today));
+  const inSlot = after.find((m) => m.slot === target.slot)!;
+  return { ok: true, data: { mission: inSlot } };
+}
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+/** Recomputes XP and streaks from the source rows and saves them. */
+export async function recomputeStats(deps: Deps, userId: string, known?: Profile) {
+  const profile = known ?? (await deps.store.getProfile(userId));
+  if (!profile) throw new Error("recomputeStats: no profile");
+  const [xp, activeDays, entitlements] = await Promise.all([
+    deps.store.xpTotal(userId),
+    deps.store.activeDays(userId),
+    deps.store.entitlements(userId),
+  ]);
+  const today = localDate(deps.now, profile.timeZone);
+  const streak = computeStreak({
+    activeDays,
+    today,
+    seasonStart: profile.seasonStart,
+    hasShieldOn: (date) =>
+      entitlements.some(
+        (e) =>
+          e.kind === "season_pass" &&
+          localDate(e.startsAt, profile.timeZone) <= date &&
+          date < localDate(e.endsAt, profile.timeZone),
+      ),
+  });
+  const lastActiveDate = activeDays.length ? [...activeDays].sort().at(-1)! : null;
+  await deps.store.saveStats({
+    userId,
+    xp,
+    currentStreak: streak.current,
+    bestStreak: streak.best,
+    lastActiveDate,
+  });
+  return { xp, ...streak };
+}

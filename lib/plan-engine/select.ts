@@ -40,6 +40,8 @@ export type DayContext = {
   singlePillar?: Pillar;
   /** Missions already used today (after a swap), never picked again today. */
   excludeIds?: string[];
+  /** With singlePillar: the longest mission allowed (a swap keeps the day's time). */
+  maxMinutes?: number;
 };
 
 export type SelectedMission = { slot: number; pillar: Pillar; mission: Mission };
@@ -146,7 +148,8 @@ export function selectDailyMissions(library: Mission[], ctx: DayContext): Select
   };
 
   if (ctx.singlePillar) {
-    const mission = pick(ctx.singlePillar, budgetMinutes, budgetMinutes * 0.5, false);
+    const max = Math.max(5, Math.min(ctx.maxMinutes ?? budgetMinutes, budgetMinutes));
+    const mission = pick(ctx.singlePillar, max, Math.min(max, budgetMinutes * 0.5), false);
     return mission ? [{ slot: 1, pillar: ctx.singlePillar, mission }] : [];
   }
 
