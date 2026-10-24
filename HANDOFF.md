@@ -4,7 +4,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Last updated
 
-2026-10-24, by Claude (Opus 5.5), mid-session (Phase 4 in progress).
+2026-10-24, by Claude (Opus 5.5), mid-session (Phase 4 done in local test mode; Phase 5 next).
 
 ## Current phase and step
 
@@ -14,11 +14,11 @@ The founder approved building every phase back to back ("I want the complete app
 - Phase 1: done, tagged `phase-1-done`.
 - Phase 2: 3 of 7. Everything is written and tested locally; the 4 open boxes need the real Supabase project (apply migrations, seed, run actions for real, `npm run test:rls`).
 - Phase 3: 7 of 10. Open: real sign-up (needs Supabase), event logging check, full landing-to-HQ test against Supabase.
-- Phase 4: in progress. HQ is built and tested (`tests/e2e/daily-loop.spec.ts`). Still to build: Path, Stats, Me (with edits applying from tomorrow, journal, sign out, founder time-travel control), web app manifest and icons. Rank-up and streak moments, ticket sheet, day-complete bonus, install tip and time travel (server side) are done.
+- Phase 4: all 8 boxes ticked, verified in local test mode (in-memory database). Recheck on Supabase; "Done when" (founder uses it 3 days) waits on Supabase and Vercel.
 
 ## Next step
 
-Finish Phase 4: Path (`app/(app)/(tabs)/path`), Stats (`.../stats`, read the `dataviz` skill before the chart), Me (`.../me`), manifest and icons. Then Phase 5 (privacy and terms drafts, export and delete, security check, Founder HQ).
+Phase 5: `/privacy` and `/terms` drafts (Me already links to them and to `/me/data`), Download my data (JSON) and Delete my account at `/me/data`, the `/security-check`, and Founder HQ at `/founder` (roles table, read-only cards). Then Phases 6 to 10.
 
 ## Waiting on the founder
 
