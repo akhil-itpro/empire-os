@@ -7,7 +7,7 @@ export function Wordmark({ size = 26, className }: { size?: number; className?: 
       className={cn("inline-flex items-baseline gap-1.5 leading-none tracking-[0.04em]", className)}
       style={{ fontSize: size }}
     >
-      <span className="font-stencil font-black text-brass">EMPIRE</span>
+      <span className="font-stencil font-black text-brass">EMPIRE</span>{" "}
       <span className="font-display font-bold text-bone">OS</span>
     </span>
   );

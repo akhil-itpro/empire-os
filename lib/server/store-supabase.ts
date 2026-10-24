@@ -279,6 +279,43 @@ export class SupabaseSeasonStore implements SeasonStore {
     if (error) fail("saveJournal", error);
   }
 
+  async exportUser(userId: string) {
+    const by = async (table: "profiles" | "user_stats", column: string) =>
+      (await this.db.from(table).select("*").eq(column, userId)).data ?? [];
+    const own = async (
+      table: "user_missions" | "xp_events" | "entitlements" | "weekly_reviews" | "journal_entries" | "reservations",
+    ) => (await this.db.from(table).select("*").eq("user_id", userId)).data ?? [];
+    const { data: login } = await this.db.auth.admin.getUserById(userId);
+    const referrals =
+      (await this.db.from("referrals").select("*").or(`referrer_id.eq.${userId},referred_id.eq.${userId}`)).data ?? [];
+    const events = (await this.db.from("events").select("name, props, created_at").eq("user_id", userId)).data ?? [];
+    return {
+      login: login.user ? { email: login.user.email, created_at: login.user.created_at } : null,
+      profile: (await by("profiles", "id"))[0] ?? null,
+      stats: (await by("user_stats", "user_id"))[0] ?? null,
+      missions: await own("user_missions"),
+      xp: await own("xp_events"),
+      entitlements: await own("entitlements"),
+      weekly_reviews: await own("weekly_reviews"),
+      journal: await own("journal_entries"),
+      reservations: await own("reservations"),
+      referrals,
+      events,
+    };
+  }
+
+  async deleteUser(userId: string) {
+    // Deleting the login cascades to every table linked to it (see the migrations).
+    const { error } = await this.db.auth.admin.deleteUser(userId);
+    if (error) fail("deleteUser", error);
+  }
+
+  async userExists(userId: string) {
+    const { data } = await this.db.auth.admin.getUserById(userId);
+    const profile = await this.getProfile(userId);
+    return Boolean(data.user) || Boolean(profile);
+  }
+
   async isFounder(userId: string) {
     const { data, error } = await this.db.from("roles").select("role").eq("user_id", userId).eq("role", "founder").maybeSingle();
     if (error) fail("isFounder", error);

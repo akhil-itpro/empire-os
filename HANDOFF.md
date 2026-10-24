@@ -18,7 +18,7 @@ The founder approved building every phase back to back ("I want the complete app
 
 ## Next step
 
-Phase 5: `/privacy` and `/terms` drafts (Me already links to them and to `/me/data`), Download my data (JSON) and Delete my account at `/me/data`, the `/security-check`, and Founder HQ at `/founder` (roles table, read-only cards). Then Phases 6 to 10.
+Phase 5 remainder: Founder HQ at `/founder` (new migration for `launch_checklist`; read-only metric cards from a founder snapshot; launch checklist checkboxes saved in the database; normal users see nothing), then run `/security-check` (needs Supabase for checks 1 to 3) and record results in `docs/LAUNCH_CHECKLIST.md`. Privacy and Terms drafts, export and delete are done.
 
 ## Waiting on the founder
 

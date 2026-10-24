@@ -8,8 +8,9 @@ export const metadata: Metadata = { title: "Log in" };
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-5 pt-3.5 pb-5">
-      <Link href="/" aria-label="EMPIRE OS home" className="self-start py-2">
+      <Link href="/" className="self-start py-2">
         <Wordmark size={24} />
+        <span className="sr-only"> home page</span>
       </Link>
       <h1 className="mt-10 font-display text-[40px] leading-none font-extrabold">Welcome back.</h1>
       <p className="mt-3 text-[15px] text-moss">Sign in with your email or Google to open HQ.</p>

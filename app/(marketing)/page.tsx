@@ -62,6 +62,14 @@ export default function LandingPage() {
           See College HQ
         </Link>
       </footer>
+      <nav aria-label="Legal" className="relative z-10 mt-1 flex gap-5 text-[13px] text-moss">
+        <Link href="/privacy" className="py-2.5 hov:text-bone">
+          Privacy
+        </Link>
+        <Link href="/terms" className="py-2.5 hov:text-bone">
+          Terms
+        </Link>
+      </nav>
     </main>
   );
 }

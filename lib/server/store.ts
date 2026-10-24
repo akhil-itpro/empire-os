@@ -116,4 +116,11 @@ export interface SeasonStore {
   /** The private one-line journal. */
   listJournal(userId: string, from: LocalDate, to: LocalDate): Promise<{ localDate: LocalDate; body: string }[]>;
   saveJournal(userId: string, localDate: LocalDate, body: string): Promise<void>;
+
+  /** Every record linked to the user, for "Download my data". */
+  exportUser(userId: string): Promise<Record<string, unknown>>;
+  /** Deletes the login and every record linked to the user. Events are kept unlinked. */
+  deleteUser(userId: string): Promise<void>;
+  /** True if any login or profile still exists for the user (to report the true result). */
+  userExists(userId: string): Promise<boolean>;
 }

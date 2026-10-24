@@ -80,9 +80,9 @@ Done when: the founder uses it for three days in a row without a bug.
 
 Read: `docs/PRODUCT.md` sections 10 and 11, `docs/LAUNCH_CHECKLIST.md`.
 
-- [ ] `/privacy` and `/terms` drafts written from what the app really does, marked "Draft, pending legal review", with placeholders [OPERATOR NAME], [CONTACT EMAIL], [GRIEVANCE CONTACT], [ADDRESS], [REFUND POLICY]
-- [ ] Links in the landing footer, sign-up screen and Me
-- [ ] Download my data (JSON) and Delete my account (type DELETE), both showing the true result
+- [x] `/privacy` and `/terms` drafts written from what the app really does, marked "Draft, pending legal review", with placeholders [OPERATOR NAME], [CONTACT EMAIL], [GRIEVANCE CONTACT], [ADDRESS], [REFUND POLICY]
+- [x] Links in the landing footer, sign-up screen and Me
+- [x] Download my data (JSON) and Delete my account (type DELETE), both showing the true result (verified in local test mode; recheck on Supabase)
 - [ ] `/security-check` run; every failure fixed; results recorded in `docs/LAUNCH_CHECKLIST.md`
 - [ ] Founder HQ at `/founder` (roles table, server-written): funnel, Day-1/7/30 return, pillars, skips, paywall views, reservations, shares, referrals, launch checklist
 - [ ] A normal user sees nothing at `/founder`

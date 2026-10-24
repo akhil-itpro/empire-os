@@ -156,4 +156,34 @@ export class MemoryStore implements SeasonStore {
     this.journal = this.journal.filter((j) => !(j.userId === userId && j.localDate === localDate));
     this.journal.push({ userId, localDate, body });
   }
+
+  async exportUser(userId: string) {
+    return {
+      profile: this.profiles.get(userId) ?? null,
+      missions: this.missions.filter((m) => m.userId === userId),
+      xp: this.xp.filter((x) => x.userId === userId),
+      stats: this.stats.get(userId) ?? null,
+      entitlements: this.grants.filter((g) => g.userId === userId),
+      journal: this.journal.filter((j) => j.userId === userId),
+      referrals: this.referrals.filter((r) => r.referrerId === userId || r.referredId === userId),
+      events: this.events.filter((e) => e.userId === userId),
+    };
+  }
+
+  async deleteUser(userId: string) {
+    this.profiles.delete(userId);
+    this.stats.delete(userId);
+    this.founders.delete(userId);
+    this.missions = this.missions.filter((m) => m.userId !== userId);
+    this.xp = this.xp.filter((x) => x.userId !== userId);
+    this.grants = this.grants.filter((g) => g.userId !== userId);
+    this.journal = this.journal.filter((j) => j.userId !== userId);
+    this.referrals = this.referrals.filter((r) => r.referrerId !== userId && r.referredId !== userId);
+    // Events stay, but no longer linked to anyone (like the database's "on delete set null").
+    this.events = this.events.map((e) => (e.userId === userId ? { ...e, userId: "" } : e));
+  }
+
+  async userExists(userId: string) {
+    return this.profiles.has(userId);
+  }
 }
