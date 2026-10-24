@@ -21,8 +21,8 @@ This kit gives Claude Code everything it needs to build EMPIRE OS properly on yo
 
 ## 3. Open the kit
 
-1. Unzip this folder to `Documents\empire-os` (Mac: `Documents/empire-os`).
-2. In VS Code: File, Open Folder, choose `empire-os`, and click "Yes, I trust the authors".
+1. The kit is already unpacked in `D:\EmpireOS`.
+2. In VS Code: File, Open Folder, choose `D:\EmpireOS`, and click "Yes, I trust the authors".
 3. Open `START-HERE.md`, then open the Claude Code panel with the spark icon.
 
 ## 4. What to type
@@ -35,6 +35,7 @@ This kit gives Claude Code everything it needs to build EMPIRE OS properly on yo
 | Something is broken | `/fix the XP bar doesn't move after Mark done` | Claude reproduces it, fixes it and adds a test |
 | After each phase | `/ship` | Claude checks everything, commits and pushes; Vercel deploys |
 | Before friends, a college or payments | `/security-check` | Claude runs real security tests and reports honestly |
+| Before you stop for the day, or switch to Codex | `/handoff` | Claude saves everything, writes `HANDOFF.md` for the next session and backs up to GitHub |
 
 Good things to type in between:
 
@@ -66,3 +67,30 @@ Good things to type in between:
 ## 7. What only you can do
 
 Meet students and TPOs, run Season 0, post content, get the lawyer review, complete Razorpay KYC, ask a CA about GST, file the trademark, and decide the refund policy. The checklist is in `docs/LAUNCH_CHECKLIST.md`.
+
+## 8. Saving your work, and switching to Codex
+
+**You never need to type git commands.** Claude saves a checkpoint (a "commit") after every working step and backs it up to GitHub (a "push"). When a phase is finished, Claude adds a label such as `phase-1-done`, a safe point you can always go back to.
+
+Useful things to say to Claude:
+
+- "Show me the last 10 checkpoints in plain English."
+- "What changed since yesterday?"
+- "Undo the last change safely." (Claude reverses it with a new checkpoint, so nothing is lost.)
+- "Take the app back to how it was at phase-1-done, safely."
+
+**Three files keep Claude and Codex in sync:**
+
+| File | What it is |
+| --- | --- |
+| `HANDOFF.md` | Where things stand right now: phase, next step, what's waiting on you. Rewritten at the end of every session |
+| `docs/SESSION_LOG.md` | A diary of every session, newest first |
+| `AGENTS.md` | Codex's rulebook. It sends Codex to `CLAUDE.md`, so both follow the same rules |
+
+**When Claude hits its usage limit:**
+
+1. If Claude can still answer, type `/handoff`. If it already stopped, that's fine: the last checkpoint and `HANDOFF.md` are still there.
+2. Open Codex on this same folder, `D:\EmpireOS` (the Codex extension in VS Code, or the Codex app).
+3. Paste: **"Read AGENTS.md and HANDOFF.md, then tell me where we are. Don't change anything until I say yes."**
+4. Keep Codex to small, clear steps. Before you close it, type: **"/handoff"** (Codex will read `.claude/skills/handoff/SKILL.md` and wrap up).
+5. Back in Claude, paste: **"Codex worked on this while you were away. Read HANDOFF.md, review Codex's commits, and tell me if anything needs fixing."**

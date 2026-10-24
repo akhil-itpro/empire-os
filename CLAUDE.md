@@ -12,6 +12,29 @@ The founder is non-technical and learning. Always:
 - Never install a paid service or add a new external account without asking first.
 - Never ask the founder to paste a secret key into the chat. Secrets go only into `.env.local` (and Vercel), typed by the founder.
 
+## Every session: start and finish
+
+The founder uses Claude Code most of the time and OpenAI Codex when Claude's usage limit is reached. `HANDOFF.md` and git carry the work between sessions and between the two agents.
+
+Start:
+1. Read `HANDOFF.md`. It says where the last session stopped, which may have been a Codex session.
+2. Run `git status` and `git log --oneline -10`. If there are uncommitted changes you didn't make, ask the founder before touching them.
+3. If the newest entry in `docs/SESSION_LOG.md` is from Codex, review its commits (`git log --grep "\[codex\]"`, then `git show` each) against this file before building on them, and tell the founder what you found.
+4. Tell the founder in two lines where things stand and what you suggest next.
+
+Finish: follow `/handoff` (`.claude/skills/handoff/SKILL.md`) when a phase or working session ends, when the founder says "wrap up" or "switching to Codex", or when usage is close to the limit.
+
+## Version control (git)
+
+The founder doesn't use git; you manage it and explain it in plain words ("saved a checkpoint", "backed up to GitHub").
+
+- Commit after every working step, with lint and typecheck passing. Message: a short summary line in the imperative ("Add Ticket component with done state"), then a line on why if it isn't obvious.
+- Run `git status` before every commit. Stage files by name or after reading the status; never stage `.env*` files (except `.env.example`) or keys.
+- Push after each commit once the GitHub remote exists, so the work is backed up and Codex can see it.
+- When a phase's "Done when" checks pass, tag it (`git tag phase-0-done`) and push the tag. Tags are the founder's safe restore points.
+- Undo with `git revert`, never by rewriting history. Never force push, `git reset --hard`, `git clean`, or delete a branch with unmerged work. Ask first before anything else that could lose work.
+- Codex commits start with `[codex]`. Codex reads `AGENTS.md`, which points it to this file; keep the two consistent when you change a rule.
+
 ## Read these when relevant
 
 - `docs/PRODUCT.md`: users, flows, game rules, money model, College HQ, data and honesty rules.
