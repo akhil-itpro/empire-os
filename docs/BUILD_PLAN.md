@@ -23,10 +23,10 @@ Done when: the live Vercel link opens on the founder's phone.
 
 Read: `docs/DESIGN.md`, `design/screens/System.dc.html`.
 
-- [ ] Tokens in `app/globals.css` exactly as listed; fonts loaded with `next/font`
-- [ ] Components in `components/ui/`: Button (primary, secondary, quiet), Ticket, Stamp, Medallion, Chip, OptionTile, ProgressTicks, StatTile, Meter, BottomNav, Sheet
-- [ ] `/styleguide` page showing every component and state (default, hover, focus, disabled, done)
-- [ ] Playwright screenshot of `/styleguide` at 390px reviewed against `System.dc.html`; differences fixed
+- [x] Tokens in `app/globals.css` exactly as listed; fonts loaded with `next/font`
+- [x] Components in `components/ui/`: Button (primary, secondary, quiet), Ticket, Stamp, Medallion, Chip, OptionTile, ProgressTicks, StatTile, Meter, BottomNav, Sheet
+- [x] `/styleguide` page showing every component and state (default, hover, focus, disabled, done)
+- [x] Playwright screenshot of `/styleguide` at 390px reviewed against `System.dc.html`; differences fixed
 
 Done when: `/design-review styleguide` finds nothing from the blacklist.
 

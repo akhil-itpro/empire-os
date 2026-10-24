@@ -8,7 +8,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Current phase and step
 
-Phase 0: Setup and first deploy (`/kickoff`). Steps 1 to 4 are done; step 5 (Supabase) is next. 3 of 6 Phase 0 boxes are ticked in `docs/BUILD_PLAN.md`.
+Phase 0 is 3 of 6 boxes (Supabase and Vercel wait on the founder). Phase 1 (design system) is done and tagged `phase-1-done`. The founder approved building every phase back to back, stopping only when they must act. Next: Phase 2 (database, mission library, game rules, plan engine).
 
 ## What this session did
 
@@ -23,7 +23,7 @@ Phase 0: Setup and first deploy (`/kickoff`). Steps 1 to 4 are done; step 5 (Sup
 
 ## Next step
 
-Kickoff step 5 (Supabase), then step 6 (Vercel). The founder asked to build the complete app (all phases); Claude showed the whole-app plan and is waiting on two answers (see Open questions) before starting Phase 1.
+Phase 2. The pure parts (`lib/game/`, `lib/plan-engine/`, the 120-mission library, migration SQL) need nothing from the founder. Applying migrations, server actions and `npm run test:rls` need the Supabase project and `.env.local` (kickoff step 5); Claude gave the founder click-by-click steps for Supabase and Vercel on 2026-10-24.
 
 ## Waiting on the founder
 
@@ -34,7 +34,6 @@ Kickoff step 5 (Supabase), then step 6 (Vercel). The founder asked to build the 
 ## Open questions
 
 - The founder asked for "a portfolio as well". Unclear whether that means a personal portfolio website, a GitHub profile set up as a portfolio, or a feature inside EMPIRE OS. Asked; waiting.
-- May Claude build the phases back to back without stopping for approval at each one (still stopping when the founder must act)? Asked; waiting.
 - Git author name is "Akhil". If the founder wants their full name on commits, run `git config --global user.name "Full Name"`.
 
 ## Known problems
@@ -50,3 +49,7 @@ Kickoff step 5 (Supabase), then step 6 (Vercel). The founder asked to build the 
 - `next dev` maintains the Next.js block at the end of `AGENTS.md`; keep it and commit it.
 - Node and Git were installed during this session, so shells started before that don't have them on PATH. If `git` or `node` isn't found, restart VS Code, or in PowerShell run: `$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')`.
 - GitHub remote `origin` is https://github.com/akhil-itpro/empire-os (private). Push after every commit.
+- UI components live in `components/ui/` and every one is shown on `/styleguide`. Pillar names, order and colour classes are in `lib/pillars.ts`. Hover styles use the custom `hov:` variant (in `app/globals.css`), so `data-demo="hover"` can show them; focus rings are global.
+- Screenshots: with `npm run dev` running, `node scripts/screenshot.mjs styleguide 390 <outDir>` saves one image per phone screen (write the route without its leading slash in Git Bash).
+- If `npm run dev` serves old styles after editing `app/globals.css` (Turbopack's dev cache went stale once), stop the dev server, delete `.next/dev` and start it again.
+- `tests/e2e/styleguide.spec.ts` runs an axe accessibility check; copy that pattern for every new screen.
