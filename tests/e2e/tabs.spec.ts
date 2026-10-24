@@ -23,7 +23,7 @@ test.describe("Path, Stats and Me", () => {
     await page.getByRole("link", { name: "Path" }).click();
     await expect(page.getByRole("heading", { name: "Your campaign" })).toBeVisible();
     // Count visible items only: Next.js keeps the previous screen hidden for instant back.
-    await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(13);
+    await expect(page.getByRole("main").getByRole("listitem").filter({ hasText: /Week \d+:/ })).toHaveCount(13);
     await expect(page.getByText("Week 1: Set-up week")).toBeVisible();
     await expect(page.getByText("Week 6: Interview week")).toBeVisible();
     await expect(page.locator('li[aria-current="step"]')).toContainText("Week 1");

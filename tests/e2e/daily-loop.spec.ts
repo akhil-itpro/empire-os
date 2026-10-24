@@ -120,7 +120,11 @@ test.describe("the daily loop", () => {
     await startSeason(page);
     await travelDays(context, 8);
     await page.goto("/hq");
-    await expect(page.getByText(/Your free week is over. Free stays free with one mission a day./)).toBeVisible();
+    // The first visit after the free week opens Season Pass once; "Maybe later" goes back.
+    await page.waitForURL(/\/pass\?from=trial_end/);
+    await page.getByRole("link", { name: "Maybe later" }).click();
+    await page.waitForURL(/\/hq$/);
+    await expect(page.getByRole("main").getByText(/Your free week is over. Free stays free with one mission a day./)).toBeVisible();
     await page.getByRole("button", { name: "Money" }).click();
     await expect(page.getByRole("button", { name: /^Mark done:/ })).toHaveCount(1);
     await expect(page.getByText("0 of 1 done")).toBeVisible();

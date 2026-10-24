@@ -48,15 +48,34 @@ async function MeContent() {
 
       <section className="mt-6 rounded-xl border border-rule bg-ledger px-4 py-3.5" aria-labelledby="access">
         <h2 id="access" className="text-sm font-bold">
-          {me.access.kind === "pass" ? "Season Pass" : me.access.kind === "trial" ? "Free week" : "Free plan"}
+          {me.access.kind === "pass"
+            ? "Season Pass"
+            : me.access.kind === "trial"
+              ? "Free week"
+              : me.access.kind === "bonus"
+                ? "Full access from an invite"
+                : "Free plan"}
         </h2>
         <p className="mt-1 text-sm text-moss">
           {me.access.kind === "pass"
             ? `Active until ${fmt(me.access.until)}. Three missions a day and the full campaign.`
-            : me.access.kind === "trial"
+            : me.access.kind === "trial" || me.access.kind === "bonus"
               ? `Everything is unlocked until ${fmt(me.access.until)}. After that, Free keeps one mission a day.`
               : "One mission a day, in the pillar you pick. XP and ranks keep working."}
         </p>
+        {me.reservedAt !== null && me.access.kind !== "pass" ? (
+          <p className="mt-2 text-sm text-bone">
+            You reserved Season Pass at ₹{me.reservedAt}. No payment taken. We&apos;ll tell you in the app when it opens.
+          </p>
+        ) : null}
+        {me.access.kind !== "pass" ? (
+          <Link
+            href="/pass?from=me"
+            className="-mb-1.5 inline-flex min-h-11 items-center text-sm font-semibold text-brass hov:text-brass-light"
+          >
+            See Season Pass
+          </Link>
+        ) : null}
       </section>
 
       <section className="mt-8" aria-labelledby="journal">

@@ -1,21 +1,9 @@
 // Our own analytics: one row in the `events` table per funnel step. No third-party
 // trackers. Props hold step numbers and labels only, never answers, names or emails.
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { ClientEvent } from "./events";
 
-export type ClientEvent =
-  | "landing_view"
-  | "quiz_start"
-  | "quiz_step"
-  | "quiz_complete"
-  | "reveal_view"
-  | "oath_done"
-  | "paywall_view"
-  | "reserve_click"
-  | "pack_locked_tap"
-  | "share_card_created"
-  | "share_click"
-  | "referral_visit"
-  | "install_tip_view";
+export type { ClientEvent };
 
 const ANON_KEY = "empire.anon";
 
@@ -36,7 +24,16 @@ let client: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 export function track(name: ClientEvent, props: Record<string, string | number | boolean> = {}) {
   if (typeof window === "undefined") return;
-  if (process.env.NEXT_PUBLIC_EMPIRE_TEST_MODE === "1") return;
+  if (process.env.NEXT_PUBLIC_EMPIRE_TEST_MODE === "1") {
+    // Local test mode: the in-memory database records it, so tests can check events.
+    void fetch("/api/test-event", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, props }),
+      keepalive: true,
+    }).catch(() => {});
+    return;
+  }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return;
   client ??= createSupabaseBrowserClient();
   const c = client;

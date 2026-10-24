@@ -2,6 +2,8 @@
 
 import { Check, Flame } from "lucide-react";
 import { animate, useReducedMotion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
   chooseFreePillar,
@@ -19,10 +21,12 @@ import { OptionTile } from "@/components/ui/OptionTile";
 import { Ticket } from "@/components/ui/Ticket";
 import { cn } from "@/lib/cn";
 import type { SkipReason } from "@/lib/game/rules";
+import { takeUninvitedPaywall } from "@/lib/paywall";
 import { PILLAR_CLASSES, PILLAR_LABEL, PILLARS, type Pillar } from "@/lib/pillars";
 import type { HqData, TicketData } from "@/lib/server/hq";
 import { InstallTip } from "./InstallTip";
 import { MissionSheet } from "./MissionSheet";
+import { TrialBanner } from "./TrialBanner";
 
 const nf = new Intl.NumberFormat("en-IN");
 
@@ -54,6 +58,7 @@ function useCountUp(value: number) {
 }
 
 export function HqView({ data, first }: { data: HqData; first: boolean }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   // Missions marked done here before the server answers, so the stamp is instant.
   const [optimistic, setOptimistic] = useState<Record<string, "done" | "assigned">>({});
@@ -65,6 +70,11 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
   const doneCount = missions.filter((m) => m.status === "done").length;
   const xpShown = useCountUp(data.xp);
   const open = missions.find((m) => m.id === openId) ?? null;
+
+  // The one uninvited paywall: the first visit after full access ends.
+  useEffect(() => {
+    if (data.offerPaywall && takeUninvitedPaywall()) router.push("/pass?from=trial_end");
+  }, [data.offerPaywall, router]);
 
   const run = (work: () => Promise<void>) => startTransition(work);
 
@@ -177,11 +187,7 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
         <Meter tone="brass" value={data.rank.percent} className="mt-2" />
       </section>
 
-      {data.trialEndingSoon ? (
-        <p className="mx-5 mt-5 rounded-xl border border-brass-deep bg-ledger px-4 py-3 text-sm text-bone">
-          Your full access ends tomorrow. After that, Free keeps one mission a day.
-        </p>
-      ) : null}
+      {data.trialEndingSoon ? <TrialBanner /> : null}
 
       <div className="mx-5 mt-[22px] flex items-baseline justify-between">
         <h1 className="font-display text-[26px] leading-none font-extrabold">Today&apos;s missions</h1>
@@ -212,6 +218,15 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
               />
             ))}
           </div>
+          <p className="mt-3 text-sm text-moss">
+            Want all three back?{" "}
+            <Link
+              href="/pass?from=free_hq"
+              className="inline-flex min-h-11 items-center font-semibold text-brass hov:text-brass-light"
+            >
+              See Season Pass
+            </Link>
+          </p>
         </section>
       ) : (
         <>

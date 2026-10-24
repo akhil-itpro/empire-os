@@ -1,13 +1,16 @@
 import { Check, Lock } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { cn } from "@/lib/cn";
 import { ACT_NAMES } from "@/lib/game/dates";
 import { depsFor } from "@/lib/server/deps";
+import { loadPacks } from "@/lib/server/season-service";
 import { loadPath, type WeekNode } from "@/lib/server/season-history";
 import { getSessionUserId } from "@/lib/server/session";
+import { PackList } from "./PackList";
 
 export const metadata: Metadata = { title: "Path", robots: { index: false } };
 
@@ -26,8 +29,9 @@ async function PathContent() {
   await connection();
   const userId = await getSessionUserId();
   if (!userId) redirect("/login");
-  const result = await loadPath(await depsFor(userId), userId);
-  if (!result.ok) redirect("/quiz");
+  const deps = await depsFor(userId);
+  const [result, packs] = await Promise.all([loadPath(deps, userId), loadPacks(deps, userId)]);
+  if (!result.ok || !packs.ok) redirect("/quiz");
   const { weeks, currentWeek, archetypeName, fullAccess } = result.data;
 
   return (
@@ -55,18 +59,44 @@ async function PathContent() {
       ))}
 
       {!fullAccess ? (
-        <p className="mt-6 rounded-xl border border-rule bg-ledger px-4 py-3 text-sm text-moss">
-          Weeks 2 to 13 are part of Season Pass. Free keeps one mission a day.
+        <p className="mt-6 rounded-xl border border-rule bg-ledger px-4 pt-3 pb-1 text-sm text-moss">
+          Weeks 2 to 13 are part of Season Pass. Free keeps one mission a day.{" "}
+          <Link
+            href="/pass?from=path_week"
+            className="inline-flex min-h-11 items-center font-semibold text-brass hov:text-brass-light"
+          >
+            See Season Pass
+          </Link>
         </p>
       ) : null}
+
+      <PackList packs={packs.data.packs} fullAccess={packs.data.fullAccess} />
     </main>
   );
 }
 
 function WeekRow({ node, last }: { node: WeekNode; last: boolean }) {
+  const { status } = node;
+  // A locked week is a link to Season Pass; every other week is plain.
+  return (
+    <li aria-current={status === "current" ? "step" : undefined}>
+      {status === "locked" ? (
+        <Link href="/pass?from=path_week" className="flex gap-3.5 rounded-lg hov:bg-ledger">
+          <WeekContent node={node} last={last} />
+        </Link>
+      ) : (
+        <div className="flex gap-3.5">
+          <WeekContent node={node} last={last} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function WeekContent({ node, last }: { node: WeekNode; last: boolean }) {
   const { week, theme, status, xp } = node;
   return (
-    <li className="flex gap-3.5" aria-current={status === "current" ? "step" : undefined}>
+    <>
       <div className="flex w-8 flex-none flex-col items-center" aria-hidden="true">
         <span
           className={cn(
@@ -106,6 +136,6 @@ function WeekRow({ node, last }: { node: WeekNode; last: boolean }) {
                 : "Coming up"}
         </div>
       </div>
-    </li>
+    </>
   );
 }

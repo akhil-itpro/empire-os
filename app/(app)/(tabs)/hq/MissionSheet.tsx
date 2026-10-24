@@ -49,6 +49,7 @@ export function MissionSheet({ mission, swapsLeft, busy, onClose, onComplete, on
               {mission.minutes} min
             </span>
             <span className="font-semibold text-brass">+{mission.xp} XP</span>
+            {mission.packName ? <span>From the {mission.packName} pack</span> : null}
           </div>
           <p className="mt-4 text-base text-bone">{mission.howTo}</p>
           {mission.pillar === "body" ? <p className="mt-3 text-[13px] text-moss">{BODY_HEALTH_NOTE}</p> : null}

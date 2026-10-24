@@ -1,5 +1,5 @@
 import "server-only";
-import { hasSeasonPass } from "@/lib/game/access";
+import { fullAccessUntil, hasSeasonPass } from "@/lib/game/access";
 import { addDays, localDate, seasonPosition } from "@/lib/game/dates";
 import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
 import { ARCHETYPE_INFO, archetypeFor } from "@/lib/plan-engine/archetype";
@@ -21,6 +21,8 @@ const editSchema = answersSchema.pick({
 
 export type Access =
   | { kind: "trial"; until: string }
+  /** Full access from a referral reward after the trial. */
+  | { kind: "bonus"; until: string }
   | { kind: "pass"; until: string }
   | { kind: "free" };
 
@@ -30,6 +32,8 @@ export type MeData = {
   day: number;
   seasonNumber: number;
   access: Access;
+  /** Reserve mode: the price reserved at, or null. */
+  reservedAt: number | null;
   settings: EditableSettings;
   /** Settings saved in Me that start tomorrow. */
   pending: { from: string; settings: EditableSettings } | null;
@@ -54,16 +58,22 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
   const profile = await deps.store.getProfile(userId);
   if (!profile) return { ok: false, error: "not_started", message: "Start your season first." };
   const today = localDate(deps.now, profile.timeZone);
-  const entitlements = await deps.store.entitlements(userId);
+  const [entitlements, reservation] = await Promise.all([
+    deps.store.entitlements(userId),
+    deps.store.getReservation(userId),
+  ]);
   const pass = entitlements
     .filter((e) => e.kind === "season_pass" && e.startsAt <= deps.now && deps.now < e.endsAt)
     .sort((a, b) => b.endsAt.getTime() - a.endsAt.getTime())[0];
 
+  // The last day covered: an end at midnight belongs to the day before.
+  const lastDay = (end: Date) => localDate(new Date(end.getTime() - 1), profile.timeZone);
+  const until = fullAccessUntil(deps.now, profile.trialEndsAt, entitlements);
   const access: Access =
     pass && hasSeasonPass(deps.now, entitlements)
-      ? { kind: "pass", until: localDate(pass.endsAt, profile.timeZone) }
-      : deps.now < profile.trialEndsAt
-        ? { kind: "trial", until: localDate(profile.trialEndsAt, profile.timeZone) }
+      ? { kind: "pass", until: lastDay(pass.endsAt) }
+      : until
+        ? { kind: deps.now < profile.trialEndsAt ? "trial" : "bonus", until: lastDay(until) }
         : { kind: "free" };
 
   const journal = await deps.store.listJournal(userId, addDays(today, -6), today);
@@ -76,6 +86,7 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
       day: seasonPosition(profile.seasonStart, today).day,
       seasonNumber: profile.seasonNumber,
       access,
+      reservedAt: reservation?.priceInr ?? null,
       settings: editable(profile.answers),
       pending:
         profile.pendingSettings && profile.pendingFrom && profile.pendingFrom > today

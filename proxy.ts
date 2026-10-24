@@ -31,5 +31,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Only the signed-in app and auth routes need a fresh session.
-  matcher: ["/hq/:path*", "/path/:path*", "/stats/:path*", "/me/:path*", "/college/:path*", "/founder/:path*", "/auth/:path*", "/start/:path*"],
+  matcher: ["/hq/:path*", "/path/:path*", "/pass/:path*", "/stats/:path*", "/me/:path*", "/college/:path*", "/founder/:path*", "/auth/:path*", "/start/:path*"],
 };

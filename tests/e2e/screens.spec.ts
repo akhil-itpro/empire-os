@@ -24,7 +24,14 @@ test("HQ through a day", async ({ page, context }) => {
   await page.screenshot({ path: `${dir}/hq-4-day-complete.png`, fullPage: true });
   await travelDays(context, 8);
   await page.goto("/hq");
+  await page.waitForURL(/\/pass/);
+  await page.getByRole("heading", { name: "Keep all three missions." }).waitFor();
+  await page.screenshot({ path: `${dir}/pass.png`, fullPage: true });
+  await page.getByRole("link", { name: "Maybe later" }).click();
+  await page.waitForURL(/\/hq$/);
   await page.screenshot({ path: `${dir}/hq-5-free.png`, fullPage: true });
+  await page.goto("/path");
+  await page.screenshot({ path: `${dir}/path-free.png`, fullPage: true });
 });
 
 test("Path, Stats and Me", async ({ page }) => {
