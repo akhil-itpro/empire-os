@@ -20,8 +20,16 @@ const STREAK_LINES: Record<number, string> = {
   90: "Ninety days. The whole season, every day.",
 };
 
+type MomentProps = {
+  moment: MomentKind;
+  onClose: () => void;
+  /** Opens the image share card for this moment; without it, Share shares a line of text. */
+  onShareCard?: () => void;
+  referralCode?: string;
+};
+
 /** A full-screen moment for a rank-up or a streak milestone, with a Share button. */
-export function Moment({ moment, onClose }: { moment: MomentKind; onClose: () => void }) {
+export function Moment({ moment, onClose, onShareCard, referralCode }: MomentProps) {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -30,21 +38,27 @@ export function Moment({ moment, onClose }: { moment: MomentKind; onClose: () =>
     ref.current?.showModal();
   }, []);
 
-  const title = moment.kind === "rank" ? `You're now ${moment.rank === "Architect" ? "an" : "a"} ${moment.rank}.` : `${moment.days}-day streak.`;
+  const title = moment.kind === "rank" ? `You're now ${/^[AEIOU]/.test(moment.rank) ? "an" : "a"} ${moment.rank}.` : `${moment.days}-day streak.`;
   const line =
     moment.kind === "rank"
       ? "Rank comes from showing up. Keep stacking days."
       : (STREAK_LINES[moment.days] ?? "Keep going.");
 
   const share = async () => {
+    if (onShareCard) {
+      ref.current?.close();
+      onShareCard();
+      return;
+    }
     track("share_click", { kind: moment.kind === "rank" ? "rank_text" : "streak_text" });
+    const url = `${window.location.origin}${referralCode ? `/r/${referralCode}` : ""}`;
     const text =
       moment.kind === "rank"
         ? `I just reached ${moment.rank} on EMPIRE OS.`
         : `${moment.days} days in a row on EMPIRE OS.`;
     try {
-      if (navigator.share) await navigator.share({ title: "EMPIRE OS", text, url: window.location.origin });
-      else await navigator.clipboard.writeText(`${text} ${window.location.origin}`);
+      if (navigator.share) await navigator.share({ title: "EMPIRE OS", text, url });
+      else await navigator.clipboard.writeText(`${text} ${url}`);
     } catch {
       // Share sheet closed.
     }

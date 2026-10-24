@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { depsFor, storeForRequest, TIME_TRAVEL_COOKIE } from "@/lib/server/deps";
 import { loadMe } from "@/lib/server/me-service";
 import { getSessionUserId } from "@/lib/server/session";
+import { shareOptions } from "@/lib/server/share-service";
 import { TEST_MODE } from "@/lib/server/test-mode";
 import { FounderTools } from "./FounderTools";
 import { JournalForm } from "./JournalForm";
 import { SettingsEditor } from "./SettingsEditor";
+import { ShareCards } from "./ShareCards";
 
 export const metadata: Metadata = { title: "Me", robots: { index: false } };
 
@@ -33,7 +35,8 @@ async function MeContent() {
   if (!userId) redirect("/login");
   // Founder tools show only for the founder role (or in local test mode), checked on the server.
   const founder = TEST_MODE || (await storeForRequest().isFounder(userId));
-  const result = await loadMe(await depsFor(userId), userId, founder);
+  const deps = await depsFor(userId);
+  const [result, cards] = await Promise.all([loadMe(deps, userId, founder), shareOptions(deps, userId)]);
   if (!result.ok) redirect("/quiz");
   const me = result.data;
   const travel = founder ? Number((await cookies()).get(TIME_TRAVEL_COOKIE)?.value ?? 0) || 0 : 0;
@@ -95,6 +98,8 @@ async function MeContent() {
           </ul>
         ) : null}
       </section>
+
+      <ShareCards options={cards} firstName={me.firstName} shareName={me.shareName} referralCode={me.referralCode} />
 
       <section className="mt-8" aria-labelledby="plan">
         <h2 id="plan" className="font-display text-[26px] leading-none font-extrabold">

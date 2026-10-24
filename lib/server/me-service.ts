@@ -4,7 +4,7 @@ import { addDays, localDate, seasonPosition } from "@/lib/game/dates";
 import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
 import { ARCHETYPE_INFO, archetypeFor } from "@/lib/plan-engine/archetype";
 import type { Deps, Result } from "./season-service";
-import type { PendingSettings } from "./store";
+import type { PendingSettings, ShareName } from "./store";
 
 export const EDITABLE = ["goal", "pillarOrder", "dailyMinutes", "budget", "city", "gym", "laptop"] as const;
 export type EditableSettings = Pick<Answers, (typeof EDITABLE)[number]>;
@@ -40,6 +40,8 @@ export type MeData = {
   journalToday: string;
   journalRecent: { localDate: string; body: string }[];
   isFounder: boolean;
+  shareName: ShareName;
+  referralCode: string;
 };
 
 function editable(source: Answers | PendingSettings): EditableSettings {
@@ -95,6 +97,8 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
       journalToday: journal.find((j) => j.localDate === today)?.body ?? "",
       journalRecent: journal.filter((j) => j.localDate !== today).sort((a, b) => b.localDate.localeCompare(a.localDate)),
       isFounder,
+      shareName: profile.shareName,
+      referralCode: profile.referralCode,
     },
   };
 }

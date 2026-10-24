@@ -383,17 +383,9 @@ export async function swapMission(deps: Deps, userId: string, missionRowId: unkn
 // Stats
 // ---------------------------------------------------------------------------
 
-/** Recomputes XP and streaks from the source rows and saves them. */
-export async function recomputeStats(deps: Deps, userId: string, known?: Profile) {
-  const profile = known ?? (await deps.store.getProfile(userId));
-  if (!profile) throw new Error("recomputeStats: no profile");
-  const [xp, activeDays, entitlements] = await Promise.all([
-    deps.store.xpTotal(userId),
-    deps.store.activeDays(userId),
-    deps.store.entitlements(userId),
-  ]);
-  const today = localDate(deps.now, profile.timeZone);
-  const streak = computeStreak({
+/** The streak on `today`, with one shield a week on days a Season Pass covered. */
+export function seasonStreak(profile: Profile, today: LocalDate, activeDays: LocalDate[], entitlements: Entitlement[]) {
+  return computeStreak({
     activeDays,
     today,
     seasonStart: profile.seasonStart,
@@ -405,6 +397,18 @@ export async function recomputeStats(deps: Deps, userId: string, known?: Profile
           date < localDate(e.endsAt, profile.timeZone),
       ),
   });
+}
+
+/** Recomputes XP and streaks from the source rows and saves them. */
+export async function recomputeStats(deps: Deps, userId: string, known?: Profile) {
+  const profile = known ?? (await deps.store.getProfile(userId));
+  if (!profile) throw new Error("recomputeStats: no profile");
+  const [xp, activeDays, entitlements] = await Promise.all([
+    deps.store.xpTotal(userId),
+    deps.store.activeDays(userId),
+    deps.store.entitlements(userId),
+  ]);
+  const streak = seasonStreak(profile, localDate(deps.now, profile.timeZone), activeDays, entitlements);
   const lastActiveDate = activeDays.length ? [...activeDays].sort().at(-1)! : null;
   await deps.store.saveStats({
     userId,

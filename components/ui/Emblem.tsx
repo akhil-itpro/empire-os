@@ -2,7 +2,7 @@ import type { Archetype } from "@/lib/plan-engine/missions";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 
 // One mark per archetype, drawn in brass inside the coin frame from Reveal.dc.html.
-const MARKS: Record<Archetype, string> = {
+export const EMBLEM_MARKS: Record<Archetype, string> = {
   // Three stacked chevrons: small reps, stacked.
   grinder: "M24 34l16-11 16 11M24 44l16-11 16 11M24 54l16-11 16 11",
   // Rising steps.
@@ -22,7 +22,7 @@ export function Emblem({ archetype, size = 78 }: { archetype: Archetype; size?: 
     <svg viewBox="0 0 80 80" width={size} height={size} role="img" aria-label={`${ARCHETYPE_INFO[archetype].name} emblem`} className="flex-none">
       <circle cx="40" cy="40" r="37" strokeWidth="2" className="fill-ledger stroke-brass" />
       <circle cx="40" cy="40" r="31" fill="none" strokeWidth="1" strokeDasharray="2 4" className="stroke-brass-deep" />
-      <path d={MARKS[archetype]} fill="none" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="stroke-brass" />
+      <path d={EMBLEM_MARKS[archetype]} fill="none" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="stroke-brass" />
     </svg>
   );
 }

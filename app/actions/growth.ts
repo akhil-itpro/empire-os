@@ -7,6 +7,7 @@ import { depsFor } from "@/lib/server/deps";
 import { reservePass as reservePassService } from "@/lib/server/pass-service";
 import { setPack as setPackService, type Deps, type Result } from "@/lib/server/season-service";
 import { getSessionUserId } from "@/lib/server/session";
+import { setShareName as setShareNameService } from "@/lib/server/share-service";
 
 type SignedOut = { ok: false; error: "signed_out"; message: string };
 
@@ -30,4 +31,8 @@ export async function reservePass(source: unknown) {
 
 export async function setPack(packId: unknown, on: unknown) {
   return withUser((deps, userId) => setPackService(deps, userId, packId, on));
+}
+
+export async function setShareName(value: unknown) {
+  return withUser((deps, userId) => setShareNameService(deps, userId, value));
 }

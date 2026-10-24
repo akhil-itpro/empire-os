@@ -13,6 +13,8 @@ import {
   undoMission,
 } from "@/app/actions/season";
 import { Moment, type MomentKind } from "@/components/Moment";
+import { ShareSheet } from "@/components/ShareSheet";
+import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { RankIcon } from "@/components/ui/icons";
 import { Medallion } from "@/components/ui/Medallion";
@@ -24,11 +26,28 @@ import type { SkipReason } from "@/lib/game/rules";
 import { takeUninvitedPaywall } from "@/lib/paywall";
 import { PILLAR_CLASSES, PILLAR_LABEL, PILLARS, type Pillar } from "@/lib/pillars";
 import type { HqData, TicketData } from "@/lib/server/hq";
+import { STREAK_CARD_DAYS, type ShareKind } from "@/lib/share/kinds";
 import { InstallTip } from "./InstallTip";
 import { MissionSheet } from "./MissionSheet";
 import { TrialBanner } from "./TrialBanner";
 
 const nf = new Intl.NumberFormat("en-IN");
+
+const CARD_TITLES: Record<ShareKind, string> = {
+  archetype: "Your archetype",
+  rank: "Your new rank",
+  "streak-7": "7-day streak",
+  "streak-30": "30-day streak",
+  "streak-60": "60-day streak",
+  "streak-90": "90-day streak",
+  season: "Season complete",
+};
+
+/** The image card for a moment: rank-ups and the 7, 30, 60 and 90-day streaks have one. */
+function cardFor(moment: MomentKind): ShareKind | null {
+  if (moment.kind === "rank") return "rank";
+  return (STREAK_CARD_DAYS as readonly number[]).includes(moment.days) ? (`streak-${moment.days}` as ShareKind) : null;
+}
 
 function without<T>(obj: Record<string, T>, key: string) {
   const copy = { ...obj };
@@ -65,6 +84,7 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [moments, setMoments] = useState<MomentKind[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [shareKind, setShareKind] = useState<ShareKind | null>(null);
 
   const missions = data.missions.map((m) => (optimistic[m.id] ? { ...m, status: optimistic[m.id] } : m));
   const doneCount = missions.filter((m) => m.status === "done").length;
@@ -199,7 +219,12 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
       </div>
 
       {data.seasonFinished ? (
-        <p className="mx-5 mt-3 text-base text-moss">Season {data.seasonNumber} is complete. Well played.</p>
+        <div className="mx-5 mt-3">
+          <p className="text-base text-moss">Season {data.seasonNumber} is complete. Well played.</p>
+          <Button variant="secondary" className="mt-4" onClick={() => setShareKind("season")}>
+            Share your season
+          </Button>
+        </div>
       ) : missions.length === 0 && !data.fullAccess ? (
         <section className="mx-5 mt-3" aria-label="Pick today's pillar">
           <p className="text-[15px] text-moss">
@@ -288,7 +313,24 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
         onSkip={skip}
       />
 
-      {moments[0] ? <Moment key={JSON.stringify(moments[0])} moment={moments[0]} onClose={() => setMoments((q) => q.slice(1))} /> : null}
+      {moments[0] ? (
+        <Moment
+          key={JSON.stringify(moments[0])}
+          moment={moments[0]}
+          referralCode={data.referralCode}
+          onClose={() => setMoments((q) => q.slice(1))}
+          onShareCard={cardFor(moments[0]) ? () => setShareKind(cardFor(moments[0])) : undefined}
+        />
+      ) : null}
+
+      <ShareSheet
+        kind={shareKind}
+        title={shareKind ? CARD_TITLES[shareKind] : ""}
+        firstName={data.firstName}
+        shareName={data.shareName}
+        referralCode={data.referralCode}
+        onClose={() => setShareKind(null)}
+      />
 
       <InstallTip show={data.dayComplete} />
     </main>

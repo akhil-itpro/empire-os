@@ -9,7 +9,7 @@ import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { selectDailyMissions } from "@/lib/plan-engine/select";
 import { ensureToday, packContext, packNameOf, settingsOn, type Deps, type Result } from "./season-service";
-import type { MissionStatus } from "./store";
+import type { MissionStatus, ShareName } from "./store";
 
 export type TicketData = {
   id: string;
@@ -26,6 +26,8 @@ export type TicketData = {
 
 export type HqData = {
   firstName: string;
+  shareName: ShareName;
+  referralCode: string;
   archetypeName: string;
   seasonNumber: number;
   day: number;
@@ -120,6 +122,8 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
     ok: true,
     data: {
       firstName: t.profile.firstName,
+      shareName: t.profile.shareName,
+      referralCode: t.profile.referralCode,
       archetypeName: ARCHETYPE_INFO[t.profile.archetype].name,
       seasonNumber: t.profile.seasonNumber,
       day: t.day,
