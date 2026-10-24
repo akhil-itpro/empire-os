@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { testSignIn } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+// Local test mode (never production): a pretend sign-in for automated tests.
+const TEST_MODE = process.env.NEXT_PUBLIC_EMPIRE_TEST_MODE === "1";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,6 +30,20 @@ export function SignInOptions({ next, onSignedIn }: { next: string; onSignedIn: 
   const [stage, setStage] = useState<"email" | "code">("email");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  if (TEST_MODE) {
+    return (
+      <Button
+        variant="secondary"
+        onClick={async () => {
+          await testSignIn();
+          onSignedIn();
+        }}
+      >
+        Test sign-in (local test mode)
+      </Button>
+    );
+  }
 
   if (!configured()) {
     return (

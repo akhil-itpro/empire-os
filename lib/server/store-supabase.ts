@@ -226,4 +226,10 @@ export class SupabaseSeasonStore implements SeasonStore {
     // Analytics must never break the student's action.
     await this.db.from("events").insert({ name, user_id: userId, props });
   }
+
+  async isFounder(userId: string) {
+    const { data, error } = await this.db.from("roles").select("role").eq("user_id", userId).eq("role", "founder").maybeSingle();
+    if (error) fail("isFounder", error);
+    return Boolean(data);
+  }
 }

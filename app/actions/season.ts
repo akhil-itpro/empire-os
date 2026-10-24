@@ -13,9 +13,8 @@ import {
   type Deps,
   type Result,
 } from "@/lib/server/season-service";
+import { depsFor } from "@/lib/server/deps";
 import { getSessionUserId } from "@/lib/server/session";
-import { SupabaseSeasonStore } from "@/lib/server/store-supabase";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type SignedOut = { ok: false; error: "signed_out"; message: string };
 
@@ -28,8 +27,7 @@ const SIGNED_OUT: SignedOut = {
 async function withUser<T>(run: (deps: Deps, userId: string) => Promise<Result<T>>): Promise<Result<T> | SignedOut> {
   const userId = await getSessionUserId();
   if (!userId) return SIGNED_OUT;
-  const deps: Deps = { store: new SupabaseSeasonStore(createSupabaseAdminClient()), now: new Date() };
-  const result = await run(deps, userId);
+  const result = await run(await depsFor(userId), userId);
   if (result.ok) refresh();
   return result;
 }

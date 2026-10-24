@@ -36,6 +36,7 @@ let client: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 export function track(name: ClientEvent, props: Record<string, string | number | boolean> = {}) {
   if (typeof window === "undefined") return;
+  if (process.env.NEXT_PUBLIC_EMPIRE_TEST_MODE === "1") return;
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return;
   client ??= createSupabaseBrowserClient();
   const c = client;

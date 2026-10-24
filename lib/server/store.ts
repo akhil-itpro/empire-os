@@ -97,4 +97,7 @@ export interface SeasonStore {
   saveStats(stats: StatsRow): Promise<void>;
 
   logEvent(name: EventName, userId: string, props?: Record<string, string | number | boolean>): Promise<void>;
+
+  /** True if the user has the founder role (written only by the server). */
+  isFounder(userId: string): Promise<boolean>;
 }

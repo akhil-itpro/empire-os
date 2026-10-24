@@ -1,5 +1,6 @@
-// An in-memory SeasonStore for unit tests. It mirrors the database rules that
-// matter: one live mission per slot per day, and one XP grant per kind + ref.
+// An in-memory SeasonStore for unit tests and the local test mode (never production).
+// It mirrors the database rules that matter: one live mission per slot per day,
+// and one XP grant per kind + ref.
 import type { Entitlement } from "@/lib/game/access";
 import type {
   EventName,
@@ -21,6 +22,7 @@ export class MemoryStore implements SeasonStore {
   grants: (Entitlement & { userId: string })[] = [];
   referrals: { referrerId: string; referredId: string }[] = [];
   events: { name: EventName; userId: string; props?: Record<string, unknown> }[] = [];
+  founders = new Set<string>();
   private nextId = 1;
 
   private uuid() {
@@ -118,5 +120,9 @@ export class MemoryStore implements SeasonStore {
 
   async logEvent(name: EventName, userId: string, props?: Record<string, unknown>) {
     this.events.push({ name, userId, props });
+  }
+
+  async isFounder(userId: string) {
+    return this.founders.has(userId);
   }
 }

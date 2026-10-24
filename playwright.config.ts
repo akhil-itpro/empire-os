@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 3000;
+// Tests run against their own dev server in local test mode (in-memory
+// database, pretend sign-in), so they never touch real data.
+const PORT = 3100;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -26,9 +28,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: `npx next dev --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
+    env: {
+      EMPIRE_TEST_MODE: "1",
+      NEXT_PUBLIC_EMPIRE_TEST_MODE: "1",
+      EMPIRE_DIST_DIR: ".next-test",
+    },
   },
 });
