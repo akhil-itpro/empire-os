@@ -25,6 +25,7 @@ import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import type { Mission } from "@/lib/plan-engine/missions";
 import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
 import { effectiveMinutes, selectDailyMissions, type PlanSettings } from "@/lib/plan-engine/select";
+import { linkReferral, rewardReferral } from "./referral-service";
 import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
 
 export type Deps = { store: SeasonStore; now: Date; library?: Mission[] };
@@ -97,11 +98,7 @@ export async function startSeason(
   });
   if (outcome === "exists") return { ok: true, data: { created: false } };
 
-  const referral = options.referralCode?.trim().toUpperCase();
-  if (referral && /^[A-Z0-9]{6,10}$/.test(referral)) {
-    const referrerId = await store.findUserIdByReferralCode(referral);
-    if (referrerId && referrerId !== userId) await store.insertReferral(referrerId, userId);
-  }
+  await linkReferral(store, userId, options.referralCode);
 
   await ensureToday(deps, userId);
   await recomputeStats(deps, userId);
@@ -257,6 +254,8 @@ export type Progress = {
   streak: number;
   streakState: StreakState;
   streakMilestone: number | null;
+  /** True when this mission made an invite pay off: 7 days of full access for both. */
+  referralReward: boolean;
 };
 
 export async function completeMission(deps: Deps, userId: string, missionRowId: unknown): Promise<Result<Progress>> {
@@ -286,6 +285,8 @@ export async function completeMission(deps: Deps, userId: string, missionRowId: 
   await store.logEvent("mission_done", userId, { mission: row.missionId, pillar: row.pillar });
   if (daysBefore.length === 0) await store.logEvent("first_mission_done", userId);
   if (dayComplete) await store.logEvent("day_complete", userId);
+  // A new active day may complete an invite (3 different days).
+  const referralReward = daysBefore.includes(today) ? false : await rewardReferral(deps, userId, daysBefore.length + 1);
 
   return {
     ok: true,
@@ -298,6 +299,7 @@ export async function completeMission(deps: Deps, userId: string, missionRowId: 
       streak: stats.current,
       streakState: stats.state,
       streakMilestone: daysBefore.includes(today) ? null : streakMilestone(stats.current, STREAK_MILESTONES),
+      referralReward,
     },
   };
 }

@@ -50,6 +50,8 @@ export default function PrivacyPage() {
           <li>To sign you in and keep your progress safe.</li>
           <li>To understand which parts of the app help people keep going, using our own event records.</li>
           <li>If you join a college batch: to show your mission progress to that college&apos;s training and placement cell. They never see your journal or quiz answers, and you can leave at any time.</li>
+          <li>If you signed up with someone&apos;s invite link: to give you both the reward, and to check that the two sign-in emails don&apos;t belong to the same person, so self-referrals don&apos;t count.</li>
+          <li>If you make a share card: it shows your archetype, rank, XP, streak, your initials (or your first name, if you choose) and your invite link. Never your email, city or journal.</li>
         </ul>
       </section>
 
@@ -58,7 +60,8 @@ export default function PrivacyPage() {
         <p className="mt-3">
           We don&apos;t sell your data. We don&apos;t use advertising pixels, session recording or third-party trackers.
           Cookies are used only to keep you signed in. Your browser also stores your quiz answers until you sign up,
-          a random analytics ID, and which one-time tips you have seen.
+          an invite code if you arrived through an invite link, a random analytics ID, and which one-time tips you have
+          seen.
         </p>
       </section>
 

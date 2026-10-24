@@ -11,3 +11,5 @@
 *.woff2 binary
 *.zip binary
 *.pdf binary
+*.ttf binary
+*.otf binary

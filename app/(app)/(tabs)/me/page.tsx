@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/Button";
 import { depsFor, storeForRequest, TIME_TRAVEL_COOKIE } from "@/lib/server/deps";
 import { loadMe } from "@/lib/server/me-service";
 import { getSessionUserId } from "@/lib/server/session";
+import { loadReferrals } from "@/lib/server/referral-service";
 import { shareOptions } from "@/lib/server/share-service";
 import { TEST_MODE } from "@/lib/server/test-mode";
 import { FounderTools } from "./FounderTools";
+import { InviteFriends } from "./InviteFriends";
 import { JournalForm } from "./JournalForm";
 import { SettingsEditor } from "./SettingsEditor";
 import { ShareCards } from "./ShareCards";
@@ -36,7 +38,11 @@ async function MeContent() {
   // Founder tools show only for the founder role (or in local test mode), checked on the server.
   const founder = TEST_MODE || (await storeForRequest().isFounder(userId));
   const deps = await depsFor(userId);
-  const [result, cards] = await Promise.all([loadMe(deps, userId, founder), shareOptions(deps, userId)]);
+  const [result, cards, referrals] = await Promise.all([
+    loadMe(deps, userId, founder),
+    shareOptions(deps, userId),
+    loadReferrals(deps, userId),
+  ]);
   if (!result.ok) redirect("/quiz");
   const me = result.data;
   const travel = founder ? Number((await cookies()).get(TIME_TRAVEL_COOKIE)?.value ?? 0) || 0 : 0;
@@ -98,6 +104,8 @@ async function MeContent() {
           </ul>
         ) : null}
       </section>
+
+      <InviteFriends code={me.referralCode} summary={referrals} />
 
       <ShareCards options={cards} firstName={me.firstName} shareName={me.shareName} referralCode={me.referralCode} />
 

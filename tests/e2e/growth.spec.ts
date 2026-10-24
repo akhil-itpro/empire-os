@@ -233,3 +233,49 @@ test.describe("share cards", () => {
     }
   });
 });
+
+test.describe("referrals", () => {
+  test("an invite link pays off for both after the friend's third active day", async ({ page, browser }) => {
+    test.setTimeout(120_000);
+    // The inviter finds their link in Me.
+    await startSeason(page);
+    await page.goto("/me");
+    const invite = page.getByRole("region", { name: "Invite friends" });
+    const link = (await invite.getByText(/\/r\/[A-Z0-9]+$/).textContent())!.trim();
+    const path = new URL(link).pathname;
+    await expect(invite).toContainText("0 friends have joined. 0 of 5 rewards earned.");
+    await noA11yViolations(page);
+
+    // A friend opens it in their own browser, signs up and plays on three days.
+    const friendContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const friend = await friendContext.newPage();
+    await friend.goto(path);
+    await friend.waitForURL((url) => url.pathname === "/");
+    expect(await friend.evaluate(() => localStorage.getItem("empire.ref"))).toBe(path.split("/").pop());
+    await startSeason(friend);
+    for (let day = 0; day < 3; day++) {
+      await travelDays(friendContext, day);
+      await friend.goto("/hq");
+      await friend.getByRole("button", { name: /^Mark done:/ }).first().click();
+      if (day < 2) await expect(friend.getByText("1 of 3 done")).toBeVisible();
+    }
+    await expect(friend.getByText("Three active days. You and the friend who invited you each get 7 days of full access.")).toBeVisible();
+
+    // Past the free week the friend still has all three missions.
+    await travelDays(friendContext, 9);
+    await friend.goto("/hq");
+    await expect(friend.getByRole("button", { name: /^Mark done:/ })).toHaveCount(3);
+    await friend.goto("/me");
+    await expect(friend.getByRole("heading", { name: "Full access from an invite" })).toBeVisible();
+    await friendContext.close();
+
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Invite friends" })).toContainText("1 friend has joined. 1 of 5 rewards earned.");
+  });
+
+  test("a broken invite code is ignored", async ({ page }) => {
+    await page.goto("/r/not-a-code!");
+    await page.waitForURL((url) => url.pathname === "/");
+    expect(await page.evaluate(() => localStorage.getItem("empire.ref"))).toBeNull();
+  });
+});

@@ -112,6 +112,9 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
       if (r.data.rankUp) queued.push({ kind: "rank", rank: r.data.rankUp });
       if (r.data.streakMilestone) queued.push({ kind: "streak", days: r.data.streakMilestone });
       if (queued.length) setMoments((q) => [...q, ...queued]);
+      if (r.data.referralReward) {
+        setMessage("Three active days. You and the friend who invited you each get 7 days of full access.");
+      }
     });
   };
 
