@@ -4,7 +4,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Last updated
 
-2026-10-24, by Claude (Opus 5.5), mid-session (Phase 4 done in local test mode; Phase 5 next).
+2026-10-24, by Claude (Opus 5.5). Session paused at a clean point after Phase 5.
 
 ## Current phase and step
 
@@ -12,13 +12,20 @@ The founder approved building every phase back to back ("I want the complete app
 
 - Phase 0: 3 of 6. Supabase, its MCP server and Vercel wait on the founder.
 - Phase 1: done, tagged `phase-1-done`.
-- Phase 2: 3 of 7. Everything is written and tested locally; the 4 open boxes need the real Supabase project (apply migrations, seed, run actions for real, `npm run test:rls`).
-- Phase 3: 7 of 10. Open: real sign-up (needs Supabase), event logging check, full landing-to-HQ test against Supabase.
-- Phase 4: all 8 boxes ticked, verified in local test mode (in-memory database). Recheck on Supabase; "Done when" (founder uses it 3 days) waits on Supabase and Vercel.
+- Phase 2: 3 of 7. Written and tested locally; open boxes need the real Supabase project (apply migrations, seed, run actions for real, `npm run test:rls`).
+- Phase 3: 7 of 10. Open: real sign-up, event logging check, full landing-to-HQ test on Supabase.
+- Phase 4: 8 of 8, verified in local test mode; recheck on Supabase.
+- Phase 5: 5 of 6 (verified in local test mode). Open: `/security-check` checks 1 to 3 on Supabase (results so far in `docs/LAUNCH_CHECKLIST.md`).
+- Phases 6 to 10: not started.
+
+## What this session did
+
+- Phases 1 to 5 as above, about 30 commits, all pushed. 105 unit tests and 35 Playwright tests pass; lint and typecheck clean; production build passes.
+- Added local test mode, founder time travel, Founder HQ, the launch checklist table, privacy and terms drafts, export and delete.
 
 ## Next step
 
-Phase 5 last box: run `/security-check` and record results in `docs/LAUNCH_CHECKLIST.md` (checks 1 to 4 need Supabase; 5 to 7 can run now). Founder HQ is built (`app/founder`, metrics in `lib/server/founder.ts`, migration `20261024120000_launch_checklist.sql`). To make the founder an admin once Supabase exists: `insert into public.roles (user_id, role) values ('<founder auth user id>', 'founder');` in the SQL Editor. Then Phase 6 (money and growth, reserve mode).
+Phase 6 (money and growth, reserve mode): read `docs/PRODUCT.md` sections 2 and 7, `design/screens/Pass.dc.html` and `Share.dc.html`. Free limits are already enforced on the server (`chooseFreePillar`, `ensureToday`); still to build: the day-6 banner link to the paywall, the paywall sheet with reserve mode (new `reservations` writes and founder count), the four packs (40 missions, Pass only), share cards with `next/og`, and referrals (`/r/CODE`, rewards after 3 active days, caps). When the founder has Supabase ready, do that first: apply migrations, regenerate types, run `npm run test:rls`, recheck Phases 2 to 5.
 
 ## Waiting on the founder
 

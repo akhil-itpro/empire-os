@@ -6,7 +6,7 @@ Built for students and freshers in India (18 to 28), and for the engineering-col
 
 ## Status
 
-**Early build: Phase 0 of 10 (setup) in progress.** What runs today is the app skeleton with the design system's colours and fonts, and a placeholder home page. Everything under "What it will do" is planned and specified, not built yet. Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
+**Active build: Phases 1 to 5 built; waiting on the database and hosting accounts to go live.** Built and tested in a browser (with a local stand-in database): the design system, the quiz and archetype reveal, the plan engine with 120 missions, the daily loop (HQ, mission stamp, swap and skip, Path, Stats, Me), privacy and terms drafts, data export and delete, and Founder HQ. Not live yet: real sign-in and data storage (needs the Supabase project), the website on Vercel, the War Room, College HQ, share cards and payments. Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
 
 ## What it will do
 
