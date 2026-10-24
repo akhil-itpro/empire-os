@@ -10,7 +10,7 @@ import { Wordmark } from "@/components/ui/Wordmark";
 import { cn } from "@/lib/cn";
 import { addDays, localDate } from "@/lib/game/dates";
 import { PILLARS } from "@/lib/pillars";
-import { MISSIONS_BY_ID } from "@/lib/plan-engine/missions";
+import { LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { storeForRequest } from "@/lib/server/deps";
 import { computeFounderMetrics } from "@/lib/server/founder";
 import { getSessionUserId } from "@/lib/server/session";
@@ -151,7 +151,7 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
             <ul className="flex flex-col gap-2 text-sm">
               {m.mostSkipped.map((s) => (
                 <li key={s.missionId}>
-                  <span className="font-semibold">{MISSIONS_BY_ID.get(s.missionId)?.title ?? s.missionId}</span>
+                  <span className="font-semibold">{LIBRARY_BY_ID.get(s.missionId)?.title ?? s.missionId}</span>
                   <span className="text-moss">
                     {" "}
                     {s.skips} {s.skips === 1 ? "skip" : "skips"}:{" "}

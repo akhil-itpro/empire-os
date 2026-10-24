@@ -1,9 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Entitlement } from "@/lib/game/access";
+import type { Entitlement, NewEntitlement } from "@/lib/game/access";
 import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
+import { isPackId, type PackId } from "@/lib/plan-engine/packs";
 import { addDays } from "@/lib/game/dates";
 import type { Database, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
@@ -14,7 +15,9 @@ import type {
   NewProfile,
   NewUserMission,
   Profile,
+  ReferralStatus,
   SeasonStore,
+  ShareName,
   StatsRow,
   UserMission,
   XpKind,
@@ -51,6 +54,8 @@ function toProfile(row: ProfileRow): Profile {
     seasonStart: row.season_start,
     trialEndsAt: new Date(row.trial_ends_at),
     referralCode: row.referral_code,
+    activePacks: (row.active_packs ?? []).filter(isPackId),
+    shareName: row.share_name,
     pendingSettings: (row.pending_settings as PendingSettings | null) ?? null,
     pendingFrom: row.pending_from,
   };
@@ -123,9 +128,39 @@ export class SupabaseSeasonStore implements SeasonStore {
     return data?.id ?? null;
   }
 
-  async insertReferral(referrerId: string, referredId: string) {
-    const { error } = await this.db.from("referrals").insert({ referrer_id: referrerId, referred_id: referredId });
+  async insertReferral(referrerId: string, referredId: string, status: ReferralStatus = "signed_up") {
+    const { error } = await this.db.from("referrals").insert({ referrer_id: referrerId, referred_id: referredId, status });
     if (error && error.code !== UNIQUE_VIOLATION) fail("insertReferral", error);
+  }
+
+  async claimReferral(referredId: string, at: Date) {
+    // One conditional update, so two requests at once can't both claim it.
+    const { data, error } = await this.db
+      .from("referrals")
+      .update({ status: "qualified", qualified_at: at.toISOString() })
+      .eq("referred_id", referredId)
+      .eq("status", "signed_up")
+      .select("id, referrer_id")
+      .maybeSingle();
+    if (error) fail("claimReferral", error);
+    return data ? { id: data.id, referrerId: data.referrer_id } : null;
+  }
+
+  async markReferralRewarded(id: string) {
+    const { error } = await this.db.from("referrals").update({ status: "rewarded" }).eq("id", id).eq("status", "qualified");
+    if (error) fail("markReferralRewarded", error);
+  }
+
+  async listReferrals(referrerId: string) {
+    const { data, error } = await this.db.from("referrals").select("status").eq("referrer_id", referrerId);
+    if (error) fail("listReferrals", error);
+    return data ?? [];
+  }
+
+  async loginEmail(userId: string) {
+    const { data, error } = await this.db.auth.admin.getUserById(userId);
+    if (error) fail("loginEmail", error);
+    return data.user?.email ?? null;
   }
 
   async listMissions(userId: string, from: string, to: string) {
@@ -207,9 +242,27 @@ export class SupabaseSeasonStore implements SeasonStore {
   }
 
   async entitlements(userId: string): Promise<Entitlement[]> {
-    const { data, error } = await this.db.from("entitlements").select("kind, starts_at, ends_at").eq("user_id", userId);
+    const { data, error } = await this.db.from("entitlements").select("kind, starts_at, ends_at, source").eq("user_id", userId);
     if (error) fail("entitlements", error);
-    return (data ?? []).map((e) => ({ kind: e.kind, startsAt: new Date(e.starts_at), endsAt: new Date(e.ends_at) }));
+    return (data ?? []).map((e) => ({
+      kind: e.kind,
+      startsAt: new Date(e.starts_at),
+      endsAt: new Date(e.ends_at),
+      source: e.source,
+    }));
+  }
+
+  async grantEntitlement(userId: string, grant: NewEntitlement) {
+    const { error } = await this.db.from("entitlements").insert({
+      user_id: userId,
+      kind: grant.kind,
+      starts_at: grant.startsAt.toISOString(),
+      ends_at: grant.endsAt.toISOString(),
+      source: grant.source,
+    });
+    if (error?.code === UNIQUE_VIOLATION) return false;
+    if (error) fail("grantEntitlement", error);
+    return true;
   }
 
   async saveStats(s: StatsRow) {
@@ -224,9 +277,51 @@ export class SupabaseSeasonStore implements SeasonStore {
     if (error) fail("saveStats", error);
   }
 
-  async logEvent(name: EventName, userId: string, props: Record<string, string | number | boolean> = {}) {
+  async logEvent(name: EventName, userId: string | null, props: Record<string, string | number | boolean> = {}) {
     // Analytics must never break the student's action.
     await this.db.from("events").insert({ name, user_id: userId, props });
+  }
+
+  async setActivePacks(userId: string, packs: PackId[]) {
+    const { error } = await this.db
+      .from("profiles")
+      .update({ active_packs: packs, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (error) fail("setActivePacks", error);
+  }
+
+  async setShareName(userId: string, shareName: ShareName) {
+    const { error } = await this.db
+      .from("profiles")
+      .update({ share_name: shareName, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (error) fail("setShareName", error);
+  }
+
+  async getReservation(userId: string) {
+    const { data, error } = await this.db
+      .from("reservations")
+      .select("price_inr, founder_price, created_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) fail("getReservation", error);
+    return data ? { priceInr: data.price_inr, founderPrice: data.founder_price, createdAt: new Date(data.created_at) } : null;
+  }
+
+  async insertReservation(userId: string, priceInr: number, founderPrice: boolean) {
+    const { error } = await this.db.from("reservations").insert({ user_id: userId, price_inr: priceInr, founder_price: founderPrice });
+    if (error?.code === UNIQUE_VIOLATION) return "exists" as const;
+    if (error) fail("insertReservation", error);
+    return "created" as const;
+  }
+
+  async countFounderReservations() {
+    const { count, error } = await this.db
+      .from("reservations")
+      .select("id", { count: "exact", head: true })
+      .eq("founder_price", true);
+    if (error) fail("countFounderReservations", error);
+    return count ?? 0;
   }
 
   async savePendingSettings(userId: string, settings: PendingSettings, from: string) {
@@ -326,7 +421,11 @@ export class SupabaseSeasonStore implements SeasonStore {
       this.db.from("events").select("name, user_id, anon_id, props, created_at").gte("created_at", `${since}T00:00:00Z`).limit(50000),
       this.db.from("user_missions").select("user_id, local_date, pillar, mission_id, status, skip_reason").gte("local_date", cohortStart).limit(100000),
       this.db.from("reservations").select("founder_price"),
-      this.db.from("referrals").select("id", { count: "exact", head: true }).gte("created_at", `${since}T00:00:00Z`),
+      this.db
+        .from("referrals")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "blocked")
+        .gte("created_at", `${since}T00:00:00Z`),
     ]);
     for (const r of [profiles, events, missions, reservations]) if (r.error) fail("founderSnapshot", r.error);
     return {

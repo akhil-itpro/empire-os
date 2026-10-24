@@ -4,6 +4,8 @@ import {
   chooseFreePillar,
   completeMission,
   ensureToday,
+  loadPacks,
+  setPack,
   skipMission,
   startSeason,
   swapMission,
@@ -88,7 +90,7 @@ describe("startSeason", () => {
     await start(ALICE);
     const code = store.profiles.get(ALICE)!.referralCode;
     await startSeason(deps(), BOB, answers, { referralCode: code.toLowerCase() });
-    expect(store.referrals).toEqual([{ referrerId: ALICE, referredId: BOB }]);
+    expect(store.referrals).toMatchObject([{ referrerId: ALICE, referredId: BOB, status: "signed_up" }]);
   });
 });
 
@@ -263,5 +265,42 @@ describe("after the free trial", () => {
   it("rejects a pillar that isn't one of the four", async () => {
     await start();
     expect(await chooseFreePillar(deps(at(8)), ALICE, "gaming")).toMatchObject({ ok: false, error: "invalid_input" });
+  });
+});
+
+describe("packs", () => {
+  it("turns a pack on during full access, and its missions join the plan from the next day", async () => {
+    await start();
+    expect(await setPack(deps(), ALICE, "placement_prep", true)).toMatchObject({ ok: true, data: { activePacks: ["placement_prep"] } });
+    // Career is Asha's top pillar, so tomorrow's career slot comes from the pack.
+    const t = await today(ALICE, at(1));
+    expect(t.missions.find((m) => m.pillar === "career")?.missionId).toMatch(/^pp-/);
+  });
+
+  it("keeps packs locked on Free, even when the server is called directly", async () => {
+    await start();
+    expect(await setPack(deps(at(8)), ALICE, "home_muscle", true)).toMatchObject({ ok: false, error: "free_limit" });
+    // A pack turned on during the trial isn't used after it.
+    await setPack(deps(), ALICE, "savings_sprint", true);
+    const r = await chooseFreePillar(deps(at(8)), ALICE, "money");
+    expect(r.ok && r.data.missions[0].missionId).toMatch(/^mon-/);
+    // Turning a pack off always works.
+    expect(await setPack(deps(at(8)), ALICE, "savings_sprint", false)).toMatchObject({ ok: true, data: { activePacks: [] } });
+  });
+
+  it("rejects packs that don't exist", async () => {
+    await start();
+    expect(await setPack(deps(), ALICE, "free_xp", true)).toMatchObject({ ok: false, error: "invalid_input" });
+    expect(await setPack(deps(), ALICE, "home_muscle", "yes")).toMatchObject({ ok: false, error: "invalid_input" });
+  });
+
+  it("counts pack missions done this season", async () => {
+    await start();
+    await setPack(deps(), ALICE, "placement_prep", true);
+    const t = await today(ALICE, at(1));
+    const packMission = t.missions.find((m) => m.missionId.startsWith("pp-"))!;
+    await completeMission(deps(at(1)), ALICE, packMission.id);
+    const packs = await loadPacks(deps(at(1)), ALICE);
+    expect(packs.ok && packs.data.packs.find((p) => p.id === "placement_prep")).toEqual({ id: "placement_prep", on: true, done: 1 });
   });
 });

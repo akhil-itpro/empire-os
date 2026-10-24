@@ -30,6 +30,7 @@ export type ProfileRow = {
   trial_ends_at: string;
   referral_code: string;
   share_name: "initials" | "first_name";
+  active_packs: string[];
   pending_settings: Record<string, unknown> | null;
   pending_from: string | null;
   created_at: string;
@@ -161,7 +162,7 @@ export type LaunchChecklistRow = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<ProfileRow, "time_zone" | "season_number" | "share_name" | "pending_settings" | "pending_from" | "created_at" | "updated_at">;
+      profiles: Table<ProfileRow, "time_zone" | "season_number" | "share_name" | "active_packs" | "pending_settings" | "pending_from" | "created_at" | "updated_at">;
       user_missions: Table<UserMissionRow, "id" | "status" | "skip_reason" | "completed_at" | "created_at">;
       xp_events: Table<XpEventRow, "id" | "created_at">;
       user_stats: Table<UserStatsRow, "xp" | "current_streak" | "best_streak" | "last_active_date" | "updated_at">;

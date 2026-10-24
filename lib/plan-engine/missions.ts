@@ -183,7 +183,5 @@ export const MISSIONS: Mission[] = [...CAREER, ...BODY, ...MIND, ...MONEY].map((
   pack: null,
 }));
 
-export const MISSIONS_BY_ID = new Map(MISSIONS.map((m) => [m.id, m]));
-
 /** Shown with every Body mission (docs/PRODUCT.md section 6). */
 export const BODY_HEALTH_NOTE = "Check with a doctor first if you have a health condition.";

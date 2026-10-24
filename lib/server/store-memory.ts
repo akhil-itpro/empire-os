@@ -1,7 +1,8 @@
 // An in-memory SeasonStore for unit tests and the local test mode (never production).
 // It mirrors the database rules that matter: one live mission per slot per day,
 // and one XP grant per kind + ref.
-import type { Entitlement } from "@/lib/game/access";
+import type { Entitlement, NewEntitlement } from "@/lib/game/access";
+import type { PackId } from "@/lib/plan-engine/packs";
 import { LAUNCH_ITEMS, type ChecklistItem, type FounderSnapshot } from "./founder";
 import type {
   EventName,
@@ -10,7 +11,10 @@ import type {
   NewProfile,
   NewUserMission,
   Profile,
+  ReferralStatus,
+  Reservation,
   SeasonStore,
+  ShareName,
   StatsRow,
   UserMission,
   XpKind,
@@ -22,9 +26,11 @@ export class MemoryStore implements SeasonStore {
   xp: { userId: string; kind: XpKind; ref: string; xp: number }[] = [];
   stats = new Map<string, StatsRow>();
   grants: (Entitlement & { userId: string })[] = [];
-  referrals: { referrerId: string; referredId: string }[] = [];
+  referrals: { id: string; referrerId: string; referredId: string; status: ReferralStatus; qualifiedAt: Date | null }[] = [];
   events: { name: EventName; userId: string; props?: Record<string, unknown>; at: Date }[] = [];
-  reservations: { userId: string; priceInr: number; founderPrice: boolean }[] = [];
+  reservations: (Reservation & { userId: string })[] = [];
+  /** Login emails, set by tests that need them (local test mode has none). */
+  emails = new Map<string, string>();
   checklist: ChecklistItem[] = LAUNCH_ITEMS.map((i) => ({ ...i, done: false }));
   founders = new Set<string>();
   journal: { userId: string; localDate: string; body: string }[] = [];
@@ -50,6 +56,8 @@ export class MemoryStore implements SeasonStore {
       seasonStart: p.seasonStart,
       trialEndsAt: p.trialEndsAt,
       referralCode: p.referralCode,
+      activePacks: [],
+      shareName: "initials",
       pendingSettings: null,
       pendingFrom: null,
     });
@@ -64,8 +72,30 @@ export class MemoryStore implements SeasonStore {
     return [...this.profiles.values()].find((p) => p.referralCode === code)?.id ?? null;
   }
 
-  async insertReferral(referrerId: string, referredId: string) {
-    this.referrals.push({ referrerId, referredId });
+  async insertReferral(referrerId: string, referredId: string, status: ReferralStatus = "signed_up") {
+    if (this.referrals.some((r) => r.referredId === referredId)) return;
+    this.referrals.push({ id: this.uuid(), referrerId, referredId, status, qualifiedAt: null });
+  }
+
+  async claimReferral(referredId: string, at: Date) {
+    const r = this.referrals.find((x) => x.referredId === referredId && x.status === "signed_up");
+    if (!r) return null;
+    r.status = "qualified";
+    r.qualifiedAt = at;
+    return { id: r.id, referrerId: r.referrerId };
+  }
+
+  async markReferralRewarded(id: string) {
+    const r = this.referrals.find((x) => x.id === id);
+    if (r) r.status = "rewarded";
+  }
+
+  async listReferrals(referrerId: string) {
+    return this.referrals.filter((r) => r.referrerId === referrerId).map((r) => ({ status: r.status }));
+  }
+
+  async loginEmail(userId: string) {
+    return this.emails.get(userId) ?? null;
   }
 
   async listMissions(userId: string, from: string, to: string) {
@@ -119,12 +149,43 @@ export class MemoryStore implements SeasonStore {
     return this.grants.filter((g) => g.userId === userId);
   }
 
+  async grantEntitlement(userId: string, grant: NewEntitlement) {
+    if (this.grants.some((g) => g.userId === userId && g.source === grant.source)) return false;
+    this.grants.push({ ...grant, userId });
+    return true;
+  }
+
   async saveStats(stats: StatsRow) {
     this.stats.set(stats.userId, stats);
   }
 
-  async logEvent(name: EventName, userId: string, props?: Record<string, unknown>) {
-    this.events.push({ name, userId, props, at: new Date() });
+  async logEvent(name: EventName, userId: string | null, props?: Record<string, unknown>) {
+    this.events.push({ name, userId: userId ?? "", props, at: new Date() });
+  }
+
+  async setActivePacks(userId: string, packs: PackId[]) {
+    const p = this.profiles.get(userId);
+    if (p) this.profiles.set(userId, { ...p, activePacks: [...packs] });
+  }
+
+  async setShareName(userId: string, shareName: ShareName) {
+    const p = this.profiles.get(userId);
+    if (p) this.profiles.set(userId, { ...p, shareName });
+  }
+
+  async getReservation(userId: string) {
+    const r = this.reservations.find((x) => x.userId === userId);
+    return r ? { priceInr: r.priceInr, founderPrice: r.founderPrice, createdAt: r.createdAt } : null;
+  }
+
+  async insertReservation(userId: string, priceInr: number, founderPrice: boolean) {
+    if (this.reservations.some((r) => r.userId === userId)) return "exists" as const;
+    this.reservations.push({ userId, priceInr, founderPrice, createdAt: new Date() });
+    return "created" as const;
+  }
+
+  async countFounderReservations() {
+    return this.reservations.filter((r) => r.founderPrice).length;
   }
 
   async isFounder(userId: string) {
@@ -167,6 +228,7 @@ export class MemoryStore implements SeasonStore {
       xp: this.xp.filter((x) => x.userId === userId),
       stats: this.stats.get(userId) ?? null,
       entitlements: this.grants.filter((g) => g.userId === userId),
+      reservations: this.reservations.filter((r) => r.userId === userId),
       journal: this.journal.filter((j) => j.userId === userId),
       referrals: this.referrals.filter((r) => r.referrerId === userId || r.referredId === userId),
       events: this.events.filter((e) => e.userId === userId),
@@ -181,6 +243,7 @@ export class MemoryStore implements SeasonStore {
     this.xp = this.xp.filter((x) => x.userId !== userId);
     this.grants = this.grants.filter((g) => g.userId !== userId);
     this.journal = this.journal.filter((j) => j.userId !== userId);
+    this.reservations = this.reservations.filter((r) => r.userId !== userId);
     this.referrals = this.referrals.filter((r) => r.referrerId !== userId && r.referredId !== userId);
     // Events stay, but no longer linked to anyone (like the database's "on delete set null").
     this.events = this.events.map((e) => (e.userId === userId ? { ...e, userId: "" } : e));
@@ -203,7 +266,7 @@ export class MemoryStore implements SeasonStore {
         total: this.reservations.length,
         founderPrice: this.reservations.filter((r) => r.founderPrice).length,
       },
-      referralSignups: this.referrals.length,
+      referralSignups: this.referrals.filter((r) => r.status !== "blocked").length,
     };
   }
 

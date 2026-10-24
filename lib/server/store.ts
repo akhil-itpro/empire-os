@@ -1,10 +1,12 @@
 // What the season service needs from the database. The app uses the Supabase
 // version (store-supabase.ts); unit tests use an in-memory one.
-import type { Entitlement } from "@/lib/game/access";
+import type { ClientEvent } from "@/lib/analytics/track";
+import type { Entitlement, NewEntitlement } from "@/lib/game/access";
 import type { LocalDate } from "@/lib/game/dates";
 import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
+import type { PackId } from "@/lib/plan-engine/packs";
 import type { PlanSettings } from "@/lib/plan-engine/select";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
 
@@ -16,7 +18,15 @@ export type EventName =
   | "mission_done"
   | "mission_skipped"
   | "mission_swapped"
-  | "day_complete";
+  | "day_complete"
+  | "reserve_click"
+  | "referral_signup"
+  | "referral_reward"
+  // Browser events, logged by the server only in local test mode (see app/api/test-event).
+  | ClientEvent;
+
+/** Share cards show initials unless the student chooses their first name. */
+export type ShareName = "initials" | "first_name";
 
 /** Edits from Me: the new plan settings plus goal, city and the archetype the goal implies. */
 export type PendingSettings = PlanSettings & {
@@ -35,12 +45,15 @@ export type Profile = {
   seasonStart: LocalDate;
   trialEndsAt: Date;
   referralCode: string;
+  /** Packs turned on (used only while the student has full access). */
+  activePacks: PackId[];
+  shareName: ShareName;
   /** Edits from Me that apply from `pendingFrom`. */
   pendingSettings: PendingSettings | null;
   pendingFrom: LocalDate | null;
 };
 
-export type NewProfile = Omit<Profile, "pendingSettings" | "pendingFrom"> & {
+export type NewProfile = Omit<Profile, "pendingSettings" | "pendingFrom" | "activePacks" | "shareName"> & {
   adultConfirmedAt: Date;
 };
 
@@ -71,13 +84,28 @@ export type StatsRow = {
   lastActiveDate: LocalDate | null;
 };
 
+/** Reserve mode: interest in Season Pass, with the price shown at the time. No payment. */
+export type Reservation = { priceInr: number; founderPrice: boolean; createdAt: Date };
+
+export type ReferralStatus = "signed_up" | "qualified" | "rewarded" | "blocked";
+
 export interface SeasonStore {
   getProfile(userId: string): Promise<Profile | null>;
   /** "exists" when the user already has a profile (a second tap on Start, for example). */
   insertProfile(profile: NewProfile): Promise<"created" | "exists">;
   isReferralCodeTaken(code: string): Promise<boolean>;
   findUserIdByReferralCode(code: string): Promise<string | null>;
-  insertReferral(referrerId: string, referredId: string): Promise<void>;
+  insertReferral(referrerId: string, referredId: string, status?: ReferralStatus): Promise<void>;
+  /**
+   * Moves the student's referral from "signed_up" to "qualified", once. Returns it,
+   * or null if there is none or it was already claimed (so a reward can't repeat).
+   */
+  claimReferral(referredId: string, at: Date): Promise<{ id: string; referrerId: string } | null>;
+  markReferralRewarded(id: string): Promise<void>;
+  /** The statuses of everyone this student invited, for Me. */
+  listReferrals(referrerId: string): Promise<{ status: ReferralStatus }[]>;
+  /** The login email, used only to block self-referrals through email aliases. */
+  loginEmail(userId: string): Promise<string | null>;
 
   /** Every mission row (including swapped ones) between two local dates, inclusive. */
   listMissions(userId: string, from: LocalDate, to: LocalDate): Promise<UserMission[]>;
@@ -102,9 +130,21 @@ export interface SeasonStore {
   /** Local dates with at least one mission done. */
   activeDays(userId: string): Promise<LocalDate[]>;
   entitlements(userId: string): Promise<Entitlement[]>;
+  /** Adds access; false if a grant from the same source already exists. */
+  grantEntitlement(userId: string, grant: NewEntitlement): Promise<boolean>;
   saveStats(stats: StatsRow): Promise<void>;
 
-  logEvent(name: EventName, userId: string, props?: Record<string, string | number | boolean>): Promise<void>;
+  /** userId is null for a visitor who isn't signed in. */
+  logEvent(name: EventName, userId: string | null, props?: Record<string, string | number | boolean>): Promise<void>;
+
+  setActivePacks(userId: string, packs: PackId[]): Promise<void>;
+  setShareName(userId: string, shareName: ShareName): Promise<void>;
+
+  getReservation(userId: string): Promise<Reservation | null>;
+  /** "exists" when the student already reserved; the first reservation stands. */
+  insertReservation(userId: string, priceInr: number, founderPrice: boolean): Promise<"created" | "exists">;
+  /** Reservations at the founder price, counted toward the first 500. */
+  countFounderReservations(): Promise<number>;
 
   /** True if the user has the founder role (written only by the server). */
   isFounder(userId: string): Promise<boolean>;

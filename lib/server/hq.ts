@@ -6,9 +6,9 @@ import { computeStreak, type StreakState } from "@/lib/game/streak";
 import { rankFor, type RankProgress } from "@/lib/game/xp";
 import type { Pillar } from "@/lib/pillars";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
-import { MISSIONS, MISSIONS_BY_ID } from "@/lib/plan-engine/missions";
+import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { selectDailyMissions } from "@/lib/plan-engine/select";
-import { ensureToday, settingsOn, type Deps, type Result } from "./season-service";
+import { ensureToday, packContext, packNameOf, settingsOn, type Deps, type Result } from "./season-service";
 import type { MissionStatus } from "./store";
 
 export type TicketData = {
@@ -20,6 +20,8 @@ export type TicketData = {
   minutes: number;
   xp: number;
   status: MissionStatus;
+  /** The pack it comes from, or null for the base library. */
+  packName: string | null;
 };
 
 export type HqData = {
@@ -31,6 +33,8 @@ export type HqData = {
   fullAccess: boolean;
   hasPass: boolean;
   trialEndingSoon: boolean;
+  /** Free after the trial and nothing reserved: HQ may open the paywall once, uninvited. */
+  offerPaywall: boolean;
   swapsLeft: number;
   missions: TicketData[];
   xp: number;
@@ -48,11 +52,12 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
   const t = todayResult.data;
   const { store } = deps;
 
-  const [recent, xp, activeDays, entitlements] = await Promise.all([
+  const [recent, xp, activeDays, entitlements, reservation] = await Promise.all([
     store.listMissions(userId, addDays(t.today, -6), t.today),
     store.xpTotal(userId),
     store.activeDays(userId),
     store.entitlements(userId),
+    t.fullAccess ? null : store.getReservation(userId),
   ]);
 
   const tz = t.profile.timeZone;
@@ -71,7 +76,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
     .map((m) => ({ localDate: m.localDate, pillar: m.pillar, done: m.status === "done" }));
 
   const missions: TicketData[] = t.missions.map((m) => {
-    const def = MISSIONS_BY_ID.get(m.missionId);
+    const def = LIBRARY_BY_ID.get(m.missionId);
     return {
       id: m.id,
       slot: m.slot,
@@ -81,6 +86,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
       minutes: m.minutes,
       xp: m.xp,
       status: m.status,
+      packName: packNameOf(m.missionId),
     };
   });
   const dayComplete = missions.length > 0 && missions.every((m) => m.status === "done");
@@ -95,7 +101,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
         missionId: m.missionId,
         date: m.localDate,
       }));
-      const [first] = selectDailyMissions(MISSIONS, {
+      const [first] = selectDailyMissions(LIBRARY, {
         seed: userId,
         date,
         seasonDay: pos.day,
@@ -104,6 +110,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
         archetype: t.profile.archetype,
         settings: settingsOn(t.profile, date),
         history,
+        ...(await packContext(deps, t.profile, t.today, true)),
       });
       if (first) tomorrow = { title: first.mission.title, pillar: first.mission.pillar, minutes: first.mission.minutes };
     }
@@ -120,6 +127,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
       fullAccess: t.fullAccess,
       hasPass: hasSeasonPass(deps.now, entitlements),
       trialEndingSoon: showTrialEndingBanner(deps.now, t.profile.trialEndsAt, entitlements),
+      offerPaywall: !t.fullAccess && !t.seasonFinished && !reservation,
       swapsLeft: t.swapsLeft,
       missions,
       xp,

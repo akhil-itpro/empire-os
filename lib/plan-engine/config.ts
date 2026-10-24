@@ -70,6 +70,8 @@ export const PLAN_CONFIG = {
     archetype: 15,
     enemyTag: 12,
     focusTag: 20,
+    /** A turned-on pack's mission beats the base library in its pillar while it fits. */
+    pack: 60,
     perDifficultyStep: 10,
     perMinuteOff: 0.8,
   },

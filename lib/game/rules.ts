@@ -34,3 +34,9 @@ export const PASS_MISSIONS_PER_DAY = 3;
 export const SWAPS_PER_DAY = 1;
 export const SKIP_REASONS = ["no_time", "not_relevant", "too_hard"] as const;
 export type SkipReason = (typeof SKIP_REASONS)[number];
+
+// Referrals (docs/PRODUCT.md section 7): when an invited student completes missions
+// on 3 different days, both get 7 days of full access. At most 5 rewards per inviter.
+export const REFERRAL_ACTIVE_DAYS = 3;
+export const REFERRAL_REWARD_DAYS = 7;
+export const REFERRAL_MAX_REWARDS = 5;

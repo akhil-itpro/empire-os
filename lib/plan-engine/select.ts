@@ -42,6 +42,10 @@ export type DayContext = {
   excludeIds?: string[];
   /** With singlePillar: the longest mission allowed (a swap keeps the day's time). */
   maxMinutes?: number;
+  /** Packs the student turned on (full access only). Their missions are preferred. */
+  packs?: string[];
+  /** Pack missions the student already finished; a done pack mission never comes back. */
+  packDone?: string[];
 };
 
 export type SelectedMission = { slot: number; pillar: Pillar; mission: Mission };
@@ -89,10 +93,12 @@ export function selectDailyMissions(library: Mission[], ctx: DayContext): Select
     ? ["free"]
     : PLAN_CONFIG.costsByBudget[settings.budget];
   const enemyTag = PLAN_CONFIG.tagByEnemy[settings.enemy];
+  const packs = new Set(ctx.packs ?? []);
+  const packDone = new Set(ctx.packDone ?? []);
 
   const usable = library.filter(
     (m) =>
-      m.pack === null &&
+      (m.pack === null || (packs.has(m.pack) && !packDone.has(m.id))) &&
       allowedCosts.includes(m.cost) &&
       (m.needs !== "gym" || settings.gym) &&
       (m.needs !== "laptop" || settings.laptop),
@@ -133,6 +139,7 @@ export function selectDailyMissions(library: Mission[], ctx: DayContext): Select
       if (m.archetypes.includes(ctx.archetype)) s += w.archetype;
       if (m.tags.includes(enemyTag)) s += w.enemyTag;
       if (adjustments.focusTag && m.tags.includes(adjustments.focusTag)) s += w.focusTag;
+      if (m.pack !== null) s += w.pack;
       s -= Math.abs(m.difficulty - difficulty) * w.perDifficultyStep;
       s -= Math.abs(m.minutes - targetMinutes) * w.perMinuteOff;
       if (quick) s -= m.minutes; // the quick win leans to the shortest

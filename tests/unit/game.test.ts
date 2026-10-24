@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasFullAccess, hasSeasonPass, showTrialEndingBanner, trialEndsAt } from "@/lib/game/access";
+import { fullAccessUntil, hasFullAccess, hasSeasonPass, showTrialEndingBanner, trialEndsAt } from "@/lib/game/access";
 import { addDays, daysBetween, isLocalDate, localDate, seasonPosition } from "@/lib/game/dates";
 import { empireScore, pillarScores } from "@/lib/game/score";
 import { computeStreak, streakMilestone } from "@/lib/game/streak";
@@ -213,5 +213,22 @@ describe("access", () => {
     expect(showTrialEndingBanner(new Date("2026-10-08T12:00:00Z"), end, [])).toBe(false);
     const pass = { kind: "season_pass" as const, startsAt: signup, endsAt: new Date("2027-01-01T00:00:00Z") };
     expect(showTrialEndingBanner(new Date("2026-10-07T12:00:00Z"), end, [pass])).toBe(false);
+  });
+
+  it("hides the banner when a referral bonus starts right as the trial ends", () => {
+    const bonus = { kind: "referral_bonus" as const, startsAt: end, endsAt: new Date("2026-10-15T10:00:00Z") };
+    expect(showTrialEndingBanner(new Date("2026-10-07T12:00:00Z"), end, [bonus])).toBe(false);
+  });
+
+  it("follows the trial and back-to-back grants to find when full access ends", () => {
+    const at = new Date("2026-10-05T00:00:00Z");
+    expect(fullAccessUntil(at, end, [])).toEqual(end);
+    const bonus1 = { kind: "referral_bonus" as const, startsAt: end, endsAt: new Date("2026-10-15T10:00:00Z") };
+    const bonus2 = { kind: "referral_bonus" as const, startsAt: bonus1.endsAt, endsAt: new Date("2026-10-22T10:00:00Z") };
+    expect(fullAccessUntil(at, end, [bonus2, bonus1])).toEqual(bonus2.endsAt);
+    // A gap breaks the chain: a later grant doesn't count until it starts.
+    const later = { kind: "referral_bonus" as const, startsAt: new Date("2026-11-01T00:00:00Z"), endsAt: new Date("2026-11-08T00:00:00Z") };
+    expect(fullAccessUntil(at, end, [later])).toEqual(end);
+    expect(fullAccessUntil(new Date("2026-10-20T00:00:00Z"), end, [later])).toBeNull();
   });
 });

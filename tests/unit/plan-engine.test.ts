@@ -3,7 +3,9 @@ import { addDays, seasonPosition } from "@/lib/game/dates";
 import { PILLARS } from "@/lib/pillars";
 import { answersSchema, GOALS, type Answers } from "@/lib/plan-engine/answers";
 import { ARCHETYPE_INFO, archetypeFor } from "@/lib/plan-engine/archetype";
+import { LIBRARY } from "@/lib/plan-engine/library";
 import { MISSIONS, type Mission } from "@/lib/plan-engine/missions";
+import { PACK_MISSIONS, PACKS } from "@/lib/plan-engine/packs";
 import { previewPlan } from "@/lib/plan-engine/preview";
 import {
   effectiveMinutes,
@@ -94,7 +96,7 @@ describe("mission library", () => {
   });
 
   it("keeps titles short enough for two lines on a ticket, and how-tos to two lines", () => {
-    for (const m of MISSIONS) {
+    for (const m of LIBRARY) {
       expect(m.title.length, m.id).toBeLessThanOrEqual(64);
       expect(m.howTo.length, m.id).toBeLessThanOrEqual(130);
     }
@@ -102,7 +104,7 @@ describe("mission library", () => {
 
   it("never gives medical, supplement, crash-diet or investment advice", () => {
     const banned = /supplement|fasting|crash|diet pill|keto|stock|share market|crypto|mutual fund|invest in|guaranteed|cure/i;
-    for (const m of MISSIONS) {
+    for (const m of LIBRARY) {
       // "No supplements needed." is a safety line, not advice to take them.
       const text = `${m.title} ${m.howTo}`.replace("No supplements needed.", "");
       expect(text, m.id).not.toMatch(banned);
@@ -346,5 +348,69 @@ describe("answers schema", () => {
     expect(answersSchema.safeParse({ ...puneStudent, dailyMinutes: 1000 }).success).toBe(false);
     expect(answersSchema.safeParse({ ...puneStudent, pillarOrder: ["career", "career", "body", "money"] }).success).toBe(false);
     expect(answersSchema.safeParse({ ...puneStudent, pillarOrder: ["career", "body", "money"] }).success).toBe(false);
+  });
+});
+
+describe("packs", () => {
+  /** Runs `days` days with the given packs on, counting a pack mission done when given. */
+  function runWithPacks(answers: Answers, packs: string[], days: number) {
+    const history: { missionId: string; date: string }[] = [];
+    const packDone: string[] = [];
+    const result: Mission[][] = [];
+    for (let i = 0; i < days; i++) {
+      const date = addDays(START, i);
+      const pos = seasonPosition(START, date);
+      const missions = selectDailyMissions(LIBRARY, {
+        seed: answers.firstName,
+        date,
+        seasonDay: pos.day,
+        week: pos.week,
+        act: pos.act,
+        archetype: archetypeFor(answers.goal),
+        settings: answers,
+        history,
+        packs,
+        packDone,
+      }).map((s) => s.mission);
+      for (const m of missions) {
+        history.push({ missionId: m.id, date });
+        if (m.pack) packDone.push(m.id);
+      }
+      result.push(missions);
+    }
+    return { result, packDone };
+  }
+
+  it("has four packs of 10 missions, one per pillar, free and phone-only", () => {
+    expect(PACKS.map((p) => p.pillar)).toEqual([...PILLARS]);
+    for (const pack of PACKS) {
+      const missions = PACK_MISSIONS.filter((m) => m.pack === pack.id);
+      expect(missions, pack.id).toHaveLength(10);
+      for (const m of missions) {
+        expect(m.pillar, m.id).toBe(pack.pillar);
+        expect(m.cost, m.id).toBe("free");
+        expect(m.needs, m.id).toBe("none");
+      }
+    }
+    expect(new Set(LIBRARY.map((m) => m.id)).size).toBe(160);
+  });
+
+  it("never gives pack missions to a student who hasn't turned the pack on", () => {
+    const { result } = runWithPacks(puneStudent, [], 30);
+    expect(result.flat().filter((m) => m.pack !== null)).toEqual([]);
+    const onlyHome = runWithPacks(puneStudent, ["home_muscle"], 30).result.flat();
+    expect(onlyHome.filter((m) => m.pack !== null && m.pack !== "home_muscle")).toEqual([]);
+  });
+
+  it("prefers a turned-on pack's missions whenever that pillar comes up", () => {
+    // Career is Rahul's top pillar, so it comes up every day.
+    const { result } = runWithPacks(puneStudent, ["placement_prep"], 7);
+    for (const day of result) expect(day.find((m) => m.pillar === "career")?.pack).toBe("placement_prep");
+  });
+
+  it("never repeats a pack mission once it's done, and runs through the pack", () => {
+    const { packDone } = runWithPacks(bengaluruPro, ["home_muscle", "speak_leader"], 60);
+    expect(new Set(packDone).size).toBe(packDone.length);
+    expect(packDone.filter((id) => id.startsWith("hm-"))).toHaveLength(10);
   });
 });

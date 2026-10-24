@@ -21,7 +21,9 @@ import { PILLARS, type Pillar } from "@/lib/pillars";
 import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
 import { archetypeFor } from "@/lib/plan-engine/archetype";
 import { PLAN_CONFIG } from "@/lib/plan-engine/config";
-import { MISSIONS, type Mission } from "@/lib/plan-engine/missions";
+import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
+import type { Mission } from "@/lib/plan-engine/missions";
+import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
 import { effectiveMinutes, selectDailyMissions, type PlanSettings } from "@/lib/plan-engine/select";
 import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
 
@@ -35,7 +37,8 @@ export type ErrorCode =
   | "swap_limit"
   | "no_replacement"
   | "free_limit"
-  | "season_finished";
+  | "season_finished"
+  | "already_has_pass";
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: ErrorCode; message: string };
 
@@ -165,6 +168,19 @@ function toRow(userId: string, today: LocalDate, slot: number, mission: Mission)
   };
 }
 
+/**
+ * Packs for a day's plan: only with full access (packs are locked on Free), and
+ * without pack missions already done, since a done pack mission never comes back.
+ */
+export async function packContext(deps: Deps, profile: Profile, today: LocalDate, fullAccess: boolean) {
+  if (!fullAccess || profile.activePacks.length === 0) return {};
+  const season = await deps.store.listMissions(profile.id, profile.seasonStart, today);
+  const packDone = season
+    .filter((m) => m.status === "done" && LIBRARY_BY_ID.get(m.missionId)?.pack)
+    .map((m) => m.missionId);
+  return { packs: [...profile.activePacks], packDone };
+}
+
 async function recentHistory(deps: Deps, userId: string, today: LocalDate) {
   const rows = await deps.store.listMissions(userId, addDays(today, -PLAN_CONFIG.noRepeatDays), addDays(today, -1));
   return rows.map((m) => ({ missionId: m.missionId, date: m.localDate }));
@@ -188,7 +204,7 @@ export async function ensureToday(deps: Deps, userId: string): Promise<Result<To
     return { ok: true, data: state };
   }
 
-  const picked = selectDailyMissions(deps.library ?? MISSIONS, {
+  const picked = selectDailyMissions(deps.library ?? LIBRARY, {
     seed: userId,
     date: state.today,
     seasonDay: state.day,
@@ -197,6 +213,7 @@ export async function ensureToday(deps: Deps, userId: string): Promise<Result<To
     archetype: profile.archetype,
     settings: settingsOn(profile, state.today),
     history: await recentHistory(deps, userId, state.today),
+    ...(await packContext(deps, profile, state.today, true)),
   });
   await deps.store.insertMissions(picked.map((p) => toRow(userId, state.today, p.slot, p.mission)));
   return { ok: true, data: await loadToday(deps, profile, entitlements) };
@@ -212,7 +229,7 @@ export async function chooseFreePillar(deps: Deps, userId: string, pillar: unkno
   if (state.fullAccess || state.missions.length > 0) return current;
 
   const settings = settingsOn(state.profile, state.today);
-  const picked = selectDailyMissions(deps.library ?? MISSIONS, {
+  const picked = selectDailyMissions(deps.library ?? LIBRARY, {
     seed: userId,
     date: state.today,
     seasonDay: state.day,
@@ -334,7 +351,7 @@ export async function swapMission(deps: Deps, userId: string, missionRowId: unkn
   const usedMinutes = state.missions.filter((m) => m.id !== target.id).reduce((s, m) => s + m.minutes, 0);
   const maxMinutes = Math.max(target.minutes, effectiveMinutes(settings.dailyMinutes) - usedMinutes);
 
-  const [replacement] = selectDailyMissions(deps.library ?? MISSIONS, {
+  const [replacement] = selectDailyMissions(deps.library ?? LIBRARY, {
     seed: `${userId}|swap`,
     date: state.today,
     seasonDay: state.day,
@@ -346,6 +363,7 @@ export async function swapMission(deps: Deps, userId: string, missionRowId: unkn
     singlePillar: target.pillar,
     excludeIds: allToday.map((m) => m.missionId),
     maxMinutes,
+    ...(await packContext(deps, state.profile, state.today, state.fullAccess)),
   });
   if (!replacement) {
     return fail("no_replacement", "There's no other mission in this pillar that fits today. Try Skip instead.");
@@ -396,4 +414,56 @@ export async function recomputeStats(deps: Deps, userId: string, known?: Profile
     lastActiveDate,
   });
   return { xp, ...streak };
+}
+
+// ---------------------------------------------------------------------------
+// Packs
+// ---------------------------------------------------------------------------
+
+export type PackState = {
+  id: PackId;
+  on: boolean;
+  /** Pack missions finished this season, out of 10. */
+  done: number;
+};
+
+/** Turns a pack on or off. Turning one on needs full access; turning off always works. */
+export async function setPack(deps: Deps, userId: string, packId: unknown, on: unknown): Promise<Result<{ activePacks: PackId[] }>> {
+  if (!isPackId(packId) || typeof on !== "boolean") return fail("invalid_input", "That pack doesn't exist.");
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  if (on && !hasFullAccess(deps.now, profile.trialEndsAt, await deps.store.entitlements(userId))) {
+    return fail("free_limit", "Packs are part of Season Pass. Free keeps one mission a day.");
+  }
+  const activePacks = PACK_IDS.filter((id) => (id === packId ? on : profile.activePacks.includes(id)));
+  await deps.store.setActivePacks(userId, activePacks);
+  return { ok: true, data: { activePacks } };
+}
+
+export async function loadPacks(deps: Deps, userId: string): Promise<Result<{ fullAccess: boolean; packs: PackState[] }>> {
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const today = localDate(deps.now, profile.timeZone);
+  const [entitlements, season] = await Promise.all([
+    deps.store.entitlements(userId),
+    deps.store.listMissions(userId, profile.seasonStart, today),
+  ]);
+  const doneIds = new Set(season.filter((m) => m.status === "done").map((m) => m.missionId));
+  return {
+    ok: true,
+    data: {
+      fullAccess: hasFullAccess(deps.now, profile.trialEndsAt, entitlements),
+      packs: PACK_IDS.map((id) => ({
+        id,
+        on: profile.activePacks.includes(id),
+        done: [...doneIds].filter((m) => LIBRARY_BY_ID.get(m)?.pack === id).length,
+      })),
+    },
+  };
+}
+
+/** The pack a mission comes from, for the ticket sheet. */
+export function packNameOf(missionId: string): string | null {
+  const pack = LIBRARY_BY_ID.get(missionId)?.pack;
+  return pack && isPackId(pack) ? PACKS_BY_ID.get(pack)!.name : null;
 }

@@ -5,7 +5,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { MISSIONS } from "@/lib/plan-engine/missions";
+import { LIBRARY } from "@/lib/plan-engine/library";
+import { PACKS } from "@/lib/plan-engine/packs";
 import { missionSeedSql } from "@/lib/plan-engine/seed-sql";
 
 const MIGRATIONS = "supabase/migrations";
@@ -73,10 +74,12 @@ afterAll(async () => {
 });
 
 describe("migrations", () => {
-  it("seed all 120 missions, matching lib/plan-engine/missions.ts", async () => {
-    expect((await rows("select count(*)::int as n from public.mission_library where active"))[0]).toEqual({ n: 120 });
+  it("seed all 160 missions and the four packs, matching lib/plan-engine", async () => {
+    expect((await rows("select count(*)::int as n from public.mission_library where active"))[0]).toEqual({ n: 160 });
+    expect((await rows("select count(*)::int as n from public.mission_library where pack is not null"))[0]).toEqual({ n: 40 });
+    expect((await rows("select id from public.packs order by id")).map((r) => r.id)).toEqual(PACKS.map((p) => p.id).sort());
     const seeds = readdirSync(MIGRATIONS).filter((f) => f.includes("mission_library")).sort();
-    expect(readFileSync(join(MIGRATIONS, seeds.at(-1)!), "utf8")).toBe(missionSeedSql(MISSIONS));
+    expect(readFileSync(join(MIGRATIONS, seeds.at(-1)!), "utf8")).toBe(missionSeedSql(LIBRARY, PACKS));
   });
 
   it("turn on row-level security for every table", async () => {
@@ -100,7 +103,7 @@ describe("a signed-in student", () => {
 
   it("can read the mission library", async () => {
     await as("authenticated", A, async () => {
-      expect((await rows("select count(*)::int as n from public.mission_library"))[0]).toEqual({ n: 120 });
+      expect((await rows("select count(*)::int as n from public.mission_library"))[0]).toEqual({ n: 160 });
     });
   });
 
@@ -112,6 +115,9 @@ describe("a signed-in student", () => {
       await expect(db.query(`insert into public.entitlements (user_id, kind, starts_at, ends_at, source) values ('${A}', 'season_pass', now(), now() + interval '90 days', 'free')`)).rejects.toThrow(/permission denied/);
       await expect(db.query(`insert into public.roles (user_id, role) values ('${A}', 'founder')`)).rejects.toThrow(/permission denied/);
       await expect(db.query(`update public.profiles set trial_ends_at = now() + interval '10 years'`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`update public.profiles set active_packs = array['home_muscle']`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`insert into public.reservations (user_id, price_inr, founder_price) values ('${A}', 1, true)`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`update public.referrals set status = 'rewarded'`)).rejects.toThrow(/permission denied/);
       await expect(db.query(`delete from public.user_missions`)).rejects.toThrow(/permission denied/);
     });
   });
@@ -160,6 +166,18 @@ describe("data rules", () => {
     await expect(
       db.query(`insert into public.xp_events (user_id, kind, ref, xp) values ('${A}', 'day_bonus', '2026-10-24', 30)`),
     ).rejects.toThrow(/duplicate key/);
+  });
+
+  it("allows only the four known packs", async () => {
+    await expect(db.query(`update public.profiles set active_packs = array['made_up'] where id = '${A}'`)).rejects.toThrow(/active_packs_check/);
+    await db.query(`update public.profiles set active_packs = array['home_muscle', 'savings_sprint'] where id = '${A}'`);
+  });
+
+  it("never grants the same access twice from one source", async () => {
+    const grant = `insert into public.entitlements (user_id, kind, starts_at, ends_at, source)
+      values ('${A}', 'referral_bonus', now(), now() + interval '7 days', 'referral:x:friend')`;
+    await db.query(grant);
+    await expect(db.query(grant)).rejects.toThrow(/duplicate key/);
   });
 
   it("rejects a pillar order without all four pillars", async () => {
