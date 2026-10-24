@@ -39,8 +39,68 @@
   font-variation-settings: "opsz" 72;
 }
 
-body {
-  background: var(--color-field);
-  color: var(--color-bone);
-  line-height: 1.5;
+/*
+ * "Ledger dark": the bottom navigation background and the medallion rim
+ * (#0F1814 in docs/DESIGN.md), mixed from two tokens rather than a new name.
+ */
+:root {
+  --ledger-dark: color-mix(in srgb, var(--color-field) 55%, var(--color-ledger));
+}
+
+/*
+ * hov: hover on devices that can hover, plus data-demo="hover" so the
+ * style guide can show the hover state without a mouse.
+ */
+@custom-variant hov {
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      @slot;
+    }
+  }
+  &[data-demo="hover"] {
+    @slot;
+  }
+}
+
+@layer base {
+  body {
+    background: var(--color-field);
+    color: var(--color-bone);
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Visible focus rings in brass (data-demo="focus" shows it in the style guide). */
+  :focus-visible,
+  [data-demo="focus"] {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-brass);
+    color: var(--color-field);
+  }
+
+  /* An open sheet stops the page behind it from scrolling. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+}
+
+/* With reduced motion, show end states with no movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
