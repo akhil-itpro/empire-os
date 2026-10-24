@@ -10,8 +10,8 @@ Target: phases 0 to 5 in about 6 weeks at 25 to 30 hours a week; phases 6 and 7 
 
 Read: `CLAUDE.md`. Run `/kickoff` for this phase.
 
-- [ ] Next.js app scaffolded in this folder (TypeScript strict, App Router, Tailwind, ESLint), kit files kept
-- [ ] Scripts exist and pass: `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `test:rls` (the last three may be placeholders that print "not set up yet")
+- [x] Next.js app scaffolded in this folder (TypeScript strict, App Router, Tailwind, ESLint), kit files kept
+- [x] Scripts exist and pass: `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `test:rls` (the last three may be placeholders that print "not set up yet")
 - [ ] Private GitHub repository with the first commit pushed
 - [ ] Supabase dev project created (Mumbai region); `.env.local` filled by the founder; `.env.example` lists names only
 - [ ] Supabase MCP server connected and authenticated
