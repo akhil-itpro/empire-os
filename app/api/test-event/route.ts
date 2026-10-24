@@ -18,3 +18,14 @@ export async function POST(request: NextRequest) {
   await testStore().logEvent(body.name as ClientEvent, await getSessionUserId(), props);
   return new NextResponse(null, { status: 204 });
 }
+
+/** Local test mode only: this test student's events, so tests can check what was logged. */
+export async function GET() {
+  if (!TEST_MODE) return new NextResponse("Not found", { status: 404 });
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ events: [] });
+  const events = testStore()
+    .events.filter((e) => e.userId === userId)
+    .map((e) => ({ name: e.name, props: e.props ?? {} }));
+  return NextResponse.json({ events });
+}

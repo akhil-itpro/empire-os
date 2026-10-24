@@ -93,13 +93,13 @@ Done when: the founder can invite 10 friends without risking their data.
 
 Read: `docs/PRODUCT.md` sections 2 and 7, `Pass.dc.html`, `Share.dc.html`.
 
-- [ ] Reverse trial and Free limits enforced on the server
-- [ ] Day-6 banner, paywall from every entry point, at most once a day uninvited
-- [ ] Reserve mode with honest copy; reservations saved
-- [ ] Four packs, locked for Free
-- [ ] Four share card types as 1080 × 1920 PNGs via `next/og`, shared through the share sheet with a download fallback
-- [ ] Referral links and rewards with limits and abuse checks
-- [ ] Events: `paywall_view` (with source), `reserve_click`, `pack_locked_tap`, `share_card_created`, `share_click`, `referral_visit`, `referral_signup`, `referral_reward`
+- [x] Reverse trial and Free limits enforced on the server (verified in local test mode; recheck on Supabase)
+- [x] Day-6 banner, paywall from every entry point, at most once a day uninvited (verified in local test mode; recheck on Supabase)
+- [x] Reserve mode with honest copy; reservations saved (verified in local test mode; recheck on Supabase)
+- [x] Four packs, locked for Free (verified in local test mode; recheck on Supabase)
+- [x] Four share card types as 1080 × 1920 PNGs via `next/og`, shared through the share sheet with a download fallback (verified in local test mode with a stand-in share sheet; check the real share sheet on Android and iPhone after deploy)
+- [x] Referral links and rewards with limits and abuse checks (verified in local test mode; recheck on Supabase)
+- [x] Events: `paywall_view` (with source), `reserve_click`, `pack_locked_tap`, `share_card_created`, `share_click`, `referral_visit`, `referral_signup`, `referral_reward` (verified in local test mode; recheck on Supabase)
 
 Done when: a test student drops to Free after day 7 (time travel), can't bypass limits by calling the server directly, and can share all four cards from a phone.
 

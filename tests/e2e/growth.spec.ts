@@ -267,6 +267,8 @@ test.describe("referrals", () => {
     await expect(friend.getByRole("button", { name: /^Mark done:/ })).toHaveCount(3);
     await friend.goto("/me");
     await expect(friend.getByRole("heading", { name: "Full access from an invite" })).toBeVisible();
+    const friendEvents = ((await (await friend.request.get("/api/test-event")).json()) as { events: { name: string }[] }).events;
+    expect(friendEvents.map((e) => e.name)).toEqual(expect.arrayContaining(["referral_signup", "referral_reward"]));
     await friendContext.close();
 
     await page.reload();
@@ -277,5 +279,39 @@ test.describe("referrals", () => {
     await page.goto("/r/not-a-code!");
     await page.waitForURL((url) => url.pathname === "/");
     expect(await page.evaluate(() => localStorage.getItem("empire.ref"))).toBeNull();
+  });
+});
+
+test.describe("growth events", () => {
+  type Logged = { name: string; props: Record<string, unknown> };
+  const logged = async (page: Page) => ((await (await page.request.get("/api/test-event")).json()) as { events: Logged[] }).events;
+
+  test("each growth action logs its event, with the paywall's source", async ({ page, context }) => {
+    await startSeason(page);
+    await page.goto("/me");
+    const code = (await page.getByRole("region", { name: "Invite friends" }).getByText(/\/r\/[A-Z0-9]+$/).textContent())!.split("/r/")[1];
+    await page.getByRole("button", { name: "I'm The Grinder card" }).click();
+    await expect(page.getByRole("img", { name: /Your share card/ })).toBeVisible();
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Save image" }).click();
+    await download;
+
+    await travelDays(context, 8);
+    await page.goto("/path");
+    await page.getByRole("link", { name: /^Unlock\s?: Home Muscle/ }).click();
+    await expect(page.getByRole("heading", { name: "Keep all three missions." })).toBeVisible();
+    await page.getByRole("button", { name: "Reserve founder price" }).click();
+    await expect(page.getByText(/^Reserved at ₹299/)).toBeVisible();
+    await page.goto(`/r/${code}`);
+    await page.waitForURL((url) => url.pathname === "/");
+
+    await expect
+      .poll(async () => (await logged(page)).map((e) => e.name))
+      .toEqual(expect.arrayContaining(["share_card_created", "share_click", "pack_locked_tap", "paywall_view", "reserve_click", "referral_visit"]));
+    const events = await logged(page);
+    expect(events.find((e) => e.name === "paywall_view")?.props).toEqual({ source: "pack" });
+    expect(events.find((e) => e.name === "pack_locked_tap")?.props).toEqual({ pack: "home_muscle" });
+    expect(events.find((e) => e.name === "share_click")?.props).toEqual({ kind: "archetype", method: "download" });
+    expect(events.find((e) => e.name === "reserve_click")?.props).toMatchObject({ source: "pack", price: 299 });
   });
 });

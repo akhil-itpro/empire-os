@@ -100,6 +100,16 @@ async function studentChecks(me: { id: string; client: SupabaseClient }, other: 
   await expectDenied(`${label} can't extend their trial`, () =>
     c.from("profiles").update({ trial_ends_at: new Date(Date.now() + 9e10).toISOString() }).eq("id", me.id).select(),
   );
+  await expectDenied(`${label} can't turn on packs without the server`, () =>
+    c.from("profiles").update({ active_packs: ["home_muscle"] }).eq("id", me.id).select(),
+  );
+  await expectDenied(`${label} can't write a reservation at their own price`, () =>
+    c.from("reservations").insert({ user_id: me.id, price_inr: 1, founder_price: true }).select(),
+  );
+  await expectDenied(`${label} can't mark a referral rewarded`, () => c.from("referrals").update({ status: "rewarded" }).select());
+  await expectDenied(`${label} can't grant themselves a referral bonus`, () =>
+    c.from("entitlements").insert({ user_id: me.id, kind: "referral_bonus", starts_at: new Date().toISOString(), ends_at: new Date(Date.now() + 6e8).toISOString(), source: "referral-reward:1" }).select(),
+  );
   await expectDenied(`${label} can't change the other student's profile`, () => c.from("profiles").update({ first_name: "Hacked" }).eq("id", other.id).select());
   await expectDenied(`${label} can't delete the other student's missions`, () => c.from("user_missions").delete().eq("user_id", other.id).select());
   await expectDenied(`${label} can't log events as the other student`, () => c.from("events").insert({ name: "quiz_start", user_id: other.id }));
@@ -121,7 +131,7 @@ try {
     check(`A visitor who isn't signed in can't read ${table}`, Boolean(r.error) || (r.data?.length ?? 0) === 0, r.error ? undefined : "got rows");
   }
   const library = await a.client.from("mission_library").select("id", { count: "exact", head: true });
-  check("A signed-in student can read the mission library", (library.count ?? 0) >= 120, library.error?.message);
+  check("A signed-in student can read the mission library and packs", (library.count ?? 0) >= 160, library.error?.message);
 } catch (error) {
   check("Setup", false, error instanceof Error ? error.message : String(error));
 } finally {
