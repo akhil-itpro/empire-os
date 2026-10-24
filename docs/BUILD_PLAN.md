@@ -36,9 +36,9 @@ Read: `docs/PRODUCT.md` sections 5, 6 and 11.
 
 - [ ] Migration with all student tables from section 11, RLS on each, owner-only reads, no direct writes to protected tables
 - [ ] `mission_library` seeded with 120 missions (30 per pillar, at least 60% free and phone-only); content reviewed for safety and tone
-- [ ] `lib/game/`: XP, ranks, streaks, shields, Empire score, with unit tests
-- [ ] `lib/plan-engine/`: archetype mapping, daily selection, `previewPlan`, with unit tests covering every rule in section 6
-- [ ] Unit test: a Pune student with 30 minutes, free-only budget and no gym gets visibly different missions from a Bengaluru IT professional with 90 minutes, a flexible budget and gym access
+- [x] `lib/game/`: XP, ranks, streaks, shields, Empire score, with unit tests
+- [x] `lib/plan-engine/`: archetype mapping, daily selection, `previewPlan`, with unit tests covering every rule in section 6
+- [x] Unit test: a Pune student with 30 minutes, free-only budget and no gym gets visibly different missions from a Bengaluru IT professional with 90 minutes, a flexible budget and gym access
 - [ ] Server actions: `startSeason(answers)`, `completeMission(id)`, `skipMission(id, reason)`, `swapMission(id)`; each checks ownership and limits
 - [ ] `scripts/rls-check.ts` (`npm run test:rls`) creates two test users in the dev project and proves neither can read or write the other's rows
 

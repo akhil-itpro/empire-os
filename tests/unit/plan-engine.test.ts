@@ -192,6 +192,17 @@ describe("daily selection", () => {
     expect(matching / missions.length).toBeGreaterThan(0.6);
   });
 
+  it("prefers missions tagged with the student's archetype", () => {
+    const tagged = (answers: Answers, archetype: string) =>
+      simulateSeason(answers, 28)
+        .flatMap((d) => d.missions)
+        .filter((m) => m.pillar === "money" && m.archetypes.includes(archetype as never)).length;
+    const founder = { ...puneStudent, goal: "side_income" as const, pillarOrder: ["money", "career", "mind", "body"] as Answers["pillarOrder"] };
+    const strategist = { ...founder, goal: "money" as const };
+    expect(tagged(founder, "founder")).toBeGreaterThan(tagged(strategist, "founder"));
+    expect(tagged(strategist, "strategist")).toBeGreaterThan(tagged(founder, "strategist"));
+  });
+
   it("is deterministic: the same inputs give the same missions", () => {
     const a = simulateSeason(bengaluruPro, 10).map((d) => d.missions.map((m) => m.id));
     const b = simulateSeason(bengaluruPro, 10).map((d) => d.missions.map((m) => m.id));
