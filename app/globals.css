@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Colour tokens, exactly as listed in docs/DESIGN.md. Use only these names. */
+@theme {
+  --color-field: #0C1310;       /* page background */
+  --color-ledger: #141E19;      /* cards, tickets */
+  --color-raised: #1B2721;      /* selected tiles, hover, tooltips */
+  --color-rule: #2A3A31;        /* hairlines, unlit ticks, perforations */
+  --color-bone: #ECE5D3;        /* primary text */
+  --color-moss: #9AA597;        /* secondary text */
+  --color-brass: #C9A24B;       /* primary action, XP, lit ticks */
+  --color-brass-light: #E8C873; /* hover on brass */
+  --color-brass-deep: #8C6A2A;  /* outlines, secondary buttons */
+  --color-stamp: #D24A3C;       /* the DONE stamp only */
+  --color-career: #3987E5;      /* pillar 1 */
+  --color-body: #D95926;        /* pillar 2 */
+  --color-mind: #9085E9;        /* pillar 3 */
+  --color-money: #199E70;       /* pillar 4 */
+  --color-good: #0CA30C;        /* status: up is good, always with an arrow icon and words */
+}
+
+/* Body text font, loaded with next/font in app/layout.tsx. */
+@theme inline {
+  --font-sans: var(--font-schibsted-grotesk), system-ui, sans-serif;
+}
+
+/*
+ * Google renamed "Big Shoulders Display" to "Big Shoulders" (and the stencil
+ * family likewise) with an optical-size axis; opsz 72 is the old Display cut.
+ */
+@utility font-display {
+  font-family: var(--font-big-shoulders), sans-serif;
+  font-variation-settings: "opsz" 72;
+}
+
+/* Stencil: only the day counter, the wordmark and the DONE stamp. */
+@utility font-stencil {
+  font-family: var(--font-big-shoulders-stencil), var(--font-big-shoulders), sans-serif;
+  font-variation-settings: "opsz" 72;
+}
+
+body {
+  background: var(--color-field);
+  color: var(--color-bone);
+  line-height: 1.5;
+}

@@ -51,6 +51,7 @@ The founder doesn't use git; you manage it and explain it in plain words ("saved
 - Vitest for unit tests (game rules, plan engine). Playwright for end-to-end tests and screenshots.
 - Vercel for hosting. Razorpay for payments, only in the payments phase.
 - Use current stable versions. If an API looks different from what you remember, check the official docs before guessing.
+- Next.js 16 changed many APIs. Before writing Next.js code, read the relevant guide in `node_modules/next/dist/docs/` (the docs for the installed version) and heed deprecation notices. The managed block at the end of `AGENTS.md` is written by `next dev`; leave it in place and commit it.
 
 ## Commands (keep these working)
 

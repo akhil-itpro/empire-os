@@ -40,3 +40,13 @@ Claude has some of these enforced by `.claude/settings.json`. Nothing enforces t
 ## Before you stop (always)
 
 Follow `.claude/skills/handoff/SKILL.md`: reach a clean point, commit, rewrite `HANDOFF.md`, add an entry at the top of `docs/SESSION_LOG.md` (agent: Codex), commit and push. If you run in Codex cloud and your work arrives as a branch or pull request, write its name in `HANDOFF.md` so Claude can review and merge it.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
