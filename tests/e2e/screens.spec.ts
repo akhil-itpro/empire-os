@@ -26,3 +26,15 @@ test("HQ through a day", async ({ page, context }) => {
   await page.goto("/hq");
   await page.screenshot({ path: `${dir}/hq-5-free.png`, fullPage: true });
 });
+
+test("Path, Stats and Me", async ({ page }) => {
+  await startSeason(page);
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole("button", { name: /^Mark done:/ }).first().click();
+    await page.waitForTimeout(600);
+  }
+  for (const route of ["path", "stats", "me"]) {
+    await page.goto(`/${route}`);
+    await page.screenshot({ path: `${dir}/${route}.png`, fullPage: true });
+  }
+});

@@ -4,6 +4,7 @@
 import type { Entitlement } from "@/lib/game/access";
 import type {
   EventName,
+  PendingSettings,
   MissionStatus,
   NewProfile,
   NewUserMission,
@@ -23,6 +24,7 @@ export class MemoryStore implements SeasonStore {
   referrals: { referrerId: string; referredId: string }[] = [];
   events: { name: EventName; userId: string; props?: Record<string, unknown> }[] = [];
   founders = new Set<string>();
+  journal: { userId: string; localDate: string; body: string }[] = [];
   private nextId = 1;
 
   private uuid() {
@@ -124,5 +126,34 @@ export class MemoryStore implements SeasonStore {
 
   async isFounder(userId: string) {
     return this.founders.has(userId);
+  }
+
+  async savePendingSettings(userId: string, settings: PendingSettings, from: string) {
+    const p = this.profiles.get(userId);
+    if (p) this.profiles.set(userId, { ...p, pendingSettings: settings, pendingFrom: from });
+  }
+
+  async commitPendingSettings(userId: string) {
+    const p = this.profiles.get(userId);
+    if (!p?.pendingSettings) return;
+    const { archetype, ...answers } = p.pendingSettings;
+    this.profiles.set(userId, {
+      ...p,
+      answers: { ...p.answers, ...answers },
+      archetype,
+      pendingSettings: null,
+      pendingFrom: null,
+    });
+  }
+
+  async listJournal(userId: string, from: string, to: string) {
+    return this.journal
+      .filter((j) => j.userId === userId && j.localDate >= from && j.localDate <= to)
+      .map(({ localDate, body }) => ({ localDate, body }));
+  }
+
+  async saveJournal(userId: string, localDate: string, body: string) {
+    this.journal = this.journal.filter((j) => !(j.userId === userId && j.localDate === localDate));
+    this.journal.push({ userId, localDate, body });
   }
 }

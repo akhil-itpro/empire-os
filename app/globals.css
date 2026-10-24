@@ -62,6 +62,16 @@
   }
 }
 
+/* The current week on the Path map: a slow brass pulse (off with reduced motion). */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brass) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
 @layer base {
   body {
     background: var(--color-field);

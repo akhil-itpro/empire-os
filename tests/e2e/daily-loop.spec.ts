@@ -67,6 +67,23 @@ test.describe("the daily loop", () => {
     await expect(page.getByText(/^2 day streak$/)).toBeAttached();
   });
 
+  test("a 3-day streak gets its full-screen moment", async ({ page, context }) => {
+    await startSeason(page);
+    for (const day of [0, 1, 2]) {
+      if (day > 0) {
+        await travelDays(context, day);
+        await page.goto("/hq");
+      }
+      await page.getByRole("button", { name: /^Mark done:/ }).first().click();
+      await expect(page.getByText("1 of 3 done")).toBeVisible();
+    }
+    const moment = page.getByRole("dialog", { name: "3-day streak." });
+    await expect(moment).toBeVisible();
+    await expect(moment.getByText("Three days in a row. The habit is starting.")).toBeVisible();
+    await moment.getByRole("button", { name: "Keep going" }).click();
+    await expect(moment).toBeHidden();
+  });
+
   test("a missed day resets the streak with the gentle message", async ({ page, context }) => {
     await startSeason(page);
     await page.getByRole("button", { name: /^Mark done:/ }).first().click();

@@ -17,6 +17,13 @@ export type EventName =
   | "mission_swapped"
   | "day_complete";
 
+/** Edits from Me: the new plan settings plus goal, city and the archetype the goal implies. */
+export type PendingSettings = PlanSettings & {
+  goal: Answers["goal"];
+  city: Answers["city"];
+  archetype: Archetype;
+};
+
 export type Profile = {
   id: string;
   firstName: string;
@@ -28,7 +35,7 @@ export type Profile = {
   trialEndsAt: Date;
   referralCode: string;
   /** Edits from Me that apply from `pendingFrom`. */
-  pendingSettings: PlanSettings | null;
+  pendingSettings: PendingSettings | null;
   pendingFrom: LocalDate | null;
 };
 
@@ -100,4 +107,13 @@ export interface SeasonStore {
 
   /** True if the user has the founder role (written only by the server). */
   isFounder(userId: string): Promise<boolean>;
+
+  /** Saves Me edits to apply from `from` (tomorrow); history is never rewritten. */
+  savePendingSettings(userId: string, settings: PendingSettings, from: LocalDate): Promise<void>;
+  /** Makes pending settings the current ones and clears them. */
+  commitPendingSettings(userId: string): Promise<void>;
+
+  /** The private one-line journal. */
+  listJournal(userId: string, from: LocalDate, to: LocalDate): Promise<{ localDate: LocalDate; body: string }[]>;
+  saveJournal(userId: string, localDate: LocalDate, body: string): Promise<void>;
 }

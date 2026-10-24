@@ -4,10 +4,10 @@ import type { Entitlement } from "@/lib/game/access";
 import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
-import type { PlanSettings } from "@/lib/plan-engine/select";
 import type { Database, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
 import type {
   EventName,
+  PendingSettings,
   MissionStatus,
   NewProfile,
   NewUserMission,
@@ -49,7 +49,7 @@ function toProfile(row: ProfileRow): Profile {
     seasonStart: row.season_start,
     trialEndsAt: new Date(row.trial_ends_at),
     referralCode: row.referral_code,
-    pendingSettings: (row.pending_settings as PlanSettings | null) ?? null,
+    pendingSettings: (row.pending_settings as PendingSettings | null) ?? null,
     pendingFrom: row.pending_from,
   };
 }
@@ -225,6 +225,58 @@ export class SupabaseSeasonStore implements SeasonStore {
   async logEvent(name: EventName, userId: string, props: Record<string, string | number | boolean> = {}) {
     // Analytics must never break the student's action.
     await this.db.from("events").insert({ name, user_id: userId, props });
+  }
+
+  async savePendingSettings(userId: string, settings: PendingSettings, from: string) {
+    const { error } = await this.db
+      .from("profiles")
+      .update({ pending_settings: settings, pending_from: from, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (error) fail("savePendingSettings", error);
+  }
+
+  async commitPendingSettings(userId: string) {
+    const profile = await this.getProfile(userId);
+    const p = profile?.pendingSettings;
+    if (!p) return;
+    const { error } = await this.db
+      .from("profiles")
+      .update({
+        goal: p.goal,
+        city: p.city,
+        archetype: p.archetype,
+        pillar_order: p.pillarOrder,
+        daily_minutes: p.dailyMinutes,
+        budget: p.budget,
+        gym: p.gym,
+        laptop: p.laptop,
+        enemy: p.enemy,
+        intensity: p.intensity,
+        pending_settings: null,
+        pending_from: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+    if (error) fail("commitPendingSettings", error);
+  }
+
+  async listJournal(userId: string, from: string, to: string) {
+    const { data, error } = await this.db
+      .from("journal_entries")
+      .select("local_date, body")
+      .eq("user_id", userId)
+      .gte("local_date", from)
+      .lte("local_date", to)
+      .order("local_date", { ascending: false });
+    if (error) fail("listJournal", error);
+    return (data ?? []).map((j) => ({ localDate: j.local_date, body: j.body }));
+  }
+
+  async saveJournal(userId: string, localDate: string, body: string) {
+    const { error } = await this.db
+      .from("journal_entries")
+      .upsert({ user_id: userId, local_date: localDate, body }, { onConflict: "user_id,local_date" });
+    if (error) fail("saveJournal", error);
   }
 
   async isFounder(userId: string) {

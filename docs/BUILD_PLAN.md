@@ -65,14 +65,14 @@ Done when: landing to HQ takes under 3 minutes on the founder's phone, and two d
 
 Read: `docs/PRODUCT.md` sections 4 and 5, `HQ.dc.html`.
 
-- [ ] HQ matching `HQ.dc.html`, with the mission-complete moment (stamp, XP count-up, vibration)
-- [ ] Ticket detail sheet with Swap (once a day) and Skip with a reason
-- [ ] Day-complete bonus and tomorrow teaser
-- [ ] Path campaign map, Stats, Me (editing applies from tomorrow)
-- [ ] Rank-up and streak milestone moments
-- [ ] Web app manifest, icons, one-time install tip
-- [ ] Founder-only "time travel" switch to simulate the next day (never visible to students)
-- [ ] Playwright: complete three missions, refresh, progress stays; next day gives fresh missions without duplicates; a missed day resets the streak with the gentle message
+- [x] HQ matching `HQ.dc.html`, with the mission-complete moment (stamp, XP count-up, vibration) (verified in local test mode; recheck on Supabase)
+- [x] Ticket detail sheet with Swap (once a day) and Skip with a reason (verified in local test mode; recheck on Supabase)
+- [x] Day-complete bonus and tomorrow teaser (verified in local test mode; recheck on Supabase)
+- [x] Path campaign map, Stats, Me (editing applies from tomorrow) (verified in local test mode; recheck on Supabase)
+- [x] Rank-up and streak milestone moments (verified in local test mode; recheck on Supabase)
+- [x] Web app manifest, icons, one-time install tip (verified in local test mode; recheck on Supabase)
+- [x] Founder-only "time travel" switch to simulate the next day (never visible to students) (verified in local test mode; recheck on Supabase)
+- [x] Playwright: complete three missions, refresh, progress stays; next day gives fresh missions without duplicates; a missed day resets the streak with the gentle message (verified in local test mode; recheck on Supabase)
 
 Done when: the founder uses it for three days in a row without a bug.
 

@@ -175,8 +175,13 @@ async function recentHistory(deps: Deps, userId: string, today: LocalDate) {
  * Free students get theirs from chooseFreePillar. Safe to call on every visit.
  */
 export async function ensureToday(deps: Deps, userId: string): Promise<Result<Today>> {
-  const profile = await deps.store.getProfile(userId);
+  let profile = await deps.store.getProfile(userId);
   if (!profile) return fail("not_started", "Start your season first.");
+  // Me edits apply from their start date: make them the current settings then.
+  if (profile.pendingSettings && profile.pendingFrom && localDate(deps.now, profile.timeZone) >= profile.pendingFrom) {
+    await deps.store.commitPendingSettings(userId);
+    profile = (await deps.store.getProfile(userId))!;
+  }
   const entitlements = await deps.store.entitlements(userId);
   const state = await loadToday(deps, profile, entitlements);
   if (state.seasonFinished || !state.fullAccess || state.missions.length > 0) {
