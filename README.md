@@ -6,7 +6,7 @@ Built for students and freshers in India (18 to 28), and for the engineering-col
 
 ## Status
 
-**Active build: Phases 1 to 5 built; waiting on the database and hosting accounts to go live.** Built and tested in a browser (with a local stand-in database): the design system, the quiz and archetype reveal, the plan engine with 120 missions, the daily loop (HQ, mission stamp, swap and skip, Path, Stats, Me), privacy and terms drafts, data export and delete, and Founder HQ. Not live yet: real sign-in and data storage (needs the Supabase project), the website on Vercel, the War Room, College HQ, share cards and payments. Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
+**Active build: Phases 1 to 6 built; waiting on the database and hosting accounts to go live.** Built and tested in a browser (with a local stand-in database): the design system, the quiz and archetype reveal, the plan engine with 120 missions plus four 10-mission packs, the daily loop (HQ, mission stamp, swap and skip, Path, Stats, Me), privacy and terms drafts, data export and delete, Founder HQ, the Season Pass paywall in reserve mode (no payment is taken), share cards and invite links with rewards. Not live yet: real sign-in and data storage (needs the Supabase project), the website on Vercel, College HQ, the War Room and payments. Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
 
 ## What it will do
 

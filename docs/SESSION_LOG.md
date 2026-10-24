@@ -2,6 +2,15 @@
 
 A diary of every working session, newest first. Whoever did the work (Claude or Codex) adds an entry before stopping, through `/handoff`. Where things stand right now is in `HANDOFF.md`.
 
+## 2026-10-24 (evening): Claude (Opus 5.5), Phase 6
+
+- Four Season Pass packs (40 phone-only missions), turned on from Path and locked on Free.
+- Paywall in reserve mode at `/pass`: server-side prices with the real founder count, reservations saved, no payment. Opens from the day-6 banner, Free HQ, locked weeks, packs and Me, and uninvited once after the free week.
+- Four share cards as 1080 × 1920 PNGs via `next/og`, with the share sheet and a save fallback; invite links with 7-day rewards, a 5-reward cap and alias self-referral blocking.
+- Fixed "a Operator" on the rank-up moment; made three browser tests wait for the server. 138 unit and 48 Playwright tests pass, build passes.
+- Commits: `01ec125` to `5378bef`, then the handoff commit.
+- Next: Phase 7 (College HQ); when Supabase exists, apply migrations and recheck Phases 2 to 6.
+
 ## 2026-10-24 (later): Claude (Opus 5.5), Phases 0 to 5
 
 - Signed the GitHub CLI in and pushed the private repository akhil-itpro/empire-os. The founder approved building all phases back to back.
