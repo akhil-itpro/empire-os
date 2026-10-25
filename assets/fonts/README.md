@@ -12,3 +12,10 @@ that `next/font` serves, so it reads these files instead.
 
 All are under the SIL Open Font License 1.1 (`OFL-BigShoulders.txt`, `OFL-SchibstedGrotesk.txt`),
 which allows bundling them with the app.
+
+## Web fonts
+
+`app/fonts/BigShoulders-ExtraBold-latin.woff2` and `BigShouldersStencil-Black-latin.woff2` are the two
+Big Shoulders files above, cut down to Latin characters (plus ₹ and common punctuation) and saved as WOFF2
+with the `subset-font` package, so pages load faster. Same licence. Schibsted Grotesk still comes from
+`next/font/google`.

@@ -23,6 +23,7 @@ export type EventName =
   | "referral_signup"
   | "referral_reward"
   | "weekly_review_done"
+  | "demo_request"
   // Browser events, logged by the server only in local test mode (see app/api/test-event).
   | ClientEvent;
 
@@ -119,6 +120,18 @@ export type WeeklyReview = {
   focusPillar: Pillar;
   outcome: ReviewOutcome;
   createdAt: Date;
+};
+
+/** "Book a 20-minute demo" from /colleges: work contact details a TPO sends us. */
+export type DemoRequest = {
+  name: string;
+  role: "tpo" | "placement_staff" | "principal" | "faculty" | "other";
+  college: string;
+  city: string;
+  email: string;
+  phone: string | null;
+  batchSize: "under_100" | "100_300" | "300_600" | "over_600";
+  note: string | null;
 };
 
 // College HQ (docs/PRODUCT.md section 9).
@@ -227,6 +240,12 @@ export interface SeasonStore {
   deleteUser(userId: string): Promise<void>;
   /** True if any login or profile still exists for the user (to report the true result). */
   userExists(userId: string): Promise<boolean>;
+
+  // --- Demo requests (/colleges). Only the founder reads them, through the server. ---
+  insertDemoRequest(request: DemoRequest): Promise<void>;
+  /** Requests since a moment, all or from one email (for rate limits). */
+  countDemoRequests(since: Date, email?: string): Promise<number>;
+  listDemoRequests(limit: number): Promise<(DemoRequest & { createdAt: Date })[]>;
 
   // --- War Room ---
   getWeeklyReview(userId: string, seasonNumber: number, week: number): Promise<WeeklyReview | null>;

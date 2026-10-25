@@ -25,18 +25,16 @@
 }
 
 /*
- * Google renamed "Big Shoulders Display" to "Big Shoulders" (and the stencil
- * family likewise) with an optical-size axis; opsz 72 is the old Display cut.
+ * Big Shoulders at optical size 72 (the old "Big Shoulders Display" cut), loaded
+ * as static files in app/layout.tsx.
  */
 @utility font-display {
   font-family: var(--font-big-shoulders), sans-serif;
-  font-variation-settings: "opsz" 72;
 }
 
 /* Stencil: only the day counter, the wordmark and the DONE stamp. */
 @utility font-stencil {
   font-family: var(--font-big-shoulders-stencil), var(--font-big-shoulders), sans-serif;
-  font-variation-settings: "opsz" 72;
 }
 
 /*

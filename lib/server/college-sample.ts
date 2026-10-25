@@ -50,9 +50,9 @@ export function sampleBatchData(
       const userId = `sample-${String(++n).padStart(4, "0")}`;
       const name = `${FIRST_NAMES[(n * 7) % FIRST_NAMES.length]} ${INITIALS[(n * 5) % INITIALS.length]}.`;
       members.push({ userId, displayName: name, section, joinedOn: batch.startsOn });
-      // Most students are fairly steady; some fade, and about one in ten stopped recently.
-      const steadiness = 0.2 + random() * 0.65;
-      const stoppedDaysAgo = random() < 0.1 ? 3 + Math.floor(random() * 5) : null;
+      // Most students are fairly steady; a few stopped recently and need a nudge.
+      const steadiness = 0.4 + random() * 0.5;
+      const stoppedDaysAgo = random() < 0.07 ? 3 + Math.floor(random() * 8) : null;
       for (let d = batch.startsOn; d <= asOf; d = addDays(d, 1)) {
         if (stoppedDaysAgo !== null && d > addDays(asOf, -stoppedDaysAgo)) break;
         const weekend = [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay());

@@ -145,6 +145,7 @@ Visible only to users with the founder role (a roles table only the server write
 - `mission_library`, `packs` (readable by all signed-in users, written only by server or migrations)
 - `orgs`, `org_admins`, `batches`, `batch_members` (TPO reads only consenting members of their own org), `org_invites` (server only), `nudges` (the student and their college read)
 - `roles` (founder), `events` (insert only from the browser; founder reads), `launch_checklist`
+- `demo_requests` (work contact details a TPO sends from `/colleges`: name, role, college, city, work email, batch size, optional phone and note; server writes, founder reads)
 
 Retention: kept while the account is active; deleted when the student deletes the account. Export (JSON of all their rows) and delete (type DELETE to confirm) are in Me, Privacy and data.
 

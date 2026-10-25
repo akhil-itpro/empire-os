@@ -275,7 +275,6 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
                   highlight={first && i === 0 && m.status === "assigned"}
                   pending={pending}
                   onComplete={m.status === "assigned" ? () => complete(m) : undefined}
-                  onUndo={m.status === "done" ? () => undo(m) : undefined}
                   onOpen={() => setOpenId(m.id)}
                   className={m.status === "skipped" ? "opacity-60" : undefined}
                 />

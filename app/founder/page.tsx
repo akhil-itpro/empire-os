@@ -14,6 +14,7 @@ import { LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { storeForRequest } from "@/lib/server/deps";
 import { computeFounderMetrics } from "@/lib/server/founder";
 import { getSessionUserId } from "@/lib/server/session";
+import { BATCH_SIZES, DEMO_ROLES } from "@/lib/demo-options";
 import { Checklist } from "./Checklist";
 import { CollegeAdmin } from "./CollegeAdmin";
 
@@ -22,6 +23,8 @@ export const metadata: Metadata = { title: "Founder HQ", robots: { index: false,
 const RANGES = [7, 30, 90] as const;
 const nf = new Intl.NumberFormat("en-IN");
 const dayLabel = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+const DEMO_ROLE_LABEL = Object.fromEntries(DEMO_ROLES.map((r) => [r.id, r.label])) as Record<string, string>;
+const BATCH_SIZE_LABEL = Object.fromEntries(BATCH_SIZES.map((b) => [b.id, b.label])) as Record<string, string>;
 const REASON: Record<string, string> = { no_time: "No time", not_relevant: "Not relevant", too_hard: "Too hard" };
 
 export default function FounderPage({ searchParams }: PageProps<"/founder">) {
@@ -53,10 +56,11 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
   const to = localDate(new Date(), "Asia/Kolkata");
   const from = addDays(to, -(range - 1));
   const toLocal = (d: Date) => localDate(d, "Asia/Kolkata");
-  const [snapshot, checklist, colleges] = await Promise.all([
+  const [snapshot, checklist, colleges, demos] = await Promise.all([
     store.founderSnapshot(from),
     store.listChecklist(),
     store.listOrgs(),
+    store.listDemoRequests(20),
   ]);
   const m = computeFounderMetrics(snapshot, from, to, toLocal);
   const totalSignups = m.signupsPerDay.reduce((s, d) => s + d.count, 0);
@@ -179,6 +183,45 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
                 <li key={p.source} className="flex justify-between">
                   <span>{p.source}</span>
                   <span className="tabular-nums">{nf.format(p.views)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card title="Website">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Colleges page visitors", value: m.website.collegesVisitors },
+              { label: "Demo requests", value: m.website.demoRequests },
+              { label: "Guide views", value: m.website.guideViews },
+            ].map((x) => (
+              <div key={x.label}>
+                <div className="text-[13px] font-medium text-moss">{x.label}</div>
+                <div className="mt-1 text-[28px] leading-none font-semibold">{nf.format(x.value)}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Demo requests">
+          {demos.length === 0 ? (
+            <p className="text-sm text-moss">No demo requests yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-3 text-sm">
+              {demos.map((d) => (
+                <li key={`${d.email}-${d.createdAt.toISOString()}`} className="border-b border-rule pb-2.5 last:border-b-0">
+                  <p className="font-semibold">
+                    {d.name}, {DEMO_ROLE_LABEL[d.role]}
+                  </p>
+                  <p className="text-moss">
+                    {d.college}, {d.city}. {BATCH_SIZE_LABEL[d.batchSize]}. {dayLabel.format(d.createdAt)}.
+                  </p>
+                  <p className="break-all">
+                    {d.email}
+                    {d.phone ? `, ${d.phone}` : ""}
+                  </p>
+                  {d.note ? <p className="mt-1 text-moss">{d.note}</p> : null}
                 </li>
               ))}
             </ul>

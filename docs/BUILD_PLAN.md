@@ -134,10 +134,10 @@ Done when: two test students with different completion patterns get visibly diff
 
 Read: `docs/DESIGN.md` and "The website that converts" in the founder playbook (summarised in `START-HERE.md`).
 
-- [ ] `/colleges` page: problem, College HQ screens, pilot offer, "Book a 20-minute demo" form saved to the database
-- [ ] Titles, descriptions, share images, sitemap, robots
-- [ ] PageSpeed Insights mobile score 90+ on `/` and `/colleges`; fixes made
-- [ ] Two short guides students search for (for example a 90-day placement preparation plan)
+- [x] `/colleges` page: problem, College HQ screens, pilot offer, "Book a 20-minute demo" form saved to the database (verified in local test mode; recheck on Supabase)
+- [x] Titles, descriptions, share images, sitemap, robots (verified locally; share images checked as WhatsApp's link preview sees them)
+- [ ] PageSpeed Insights mobile score 90+ on `/` and `/colleges`; fixes made (fixes made: Lighthouse 12 mobile on a local production build scores 96 and 94; recheck on pagespeed.web.dev once live)
+- [x] Two short guides students search for (for example a 90-day placement preparation plan) (`/guides/90-day-placement-preparation-plan`, `/guides/no-gym-home-workout-plan-for-students`)
 
 Done when: the live site shares nicely on WhatsApp and scores 90+ on mobile.
 

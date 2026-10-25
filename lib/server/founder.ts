@@ -34,6 +34,8 @@ export type FounderMetrics = {
   shareCards: number;
   reservations: { total: number; founderPrice: number };
   referralSignups: number;
+  /** START-HERE.md section 6: colleges-page visitors who book a demo, and guide readers. */
+  website: { collegesVisitors: number; demoRequests: number; guideViews: number };
 };
 
 export function computeFounderMetrics(s: FounderSnapshot, from: LocalDate, to: LocalDate, toDate: (d: Date) => LocalDate): FounderMetrics {
@@ -105,6 +107,11 @@ export function computeFounderMetrics(s: FounderSnapshot, from: LocalDate, to: L
     shareCards: events.filter((e) => e.name === "share_card_created").length,
     reservations: s.reservations,
     referralSignups: s.referralSignups,
+    website: {
+      collegesVisitors: actors("colleges_view"),
+      demoRequests: events.filter((e) => e.name === "demo_request").length,
+      guideViews: events.filter((e) => e.name === "guide_view").length,
+    },
   };
 }
 

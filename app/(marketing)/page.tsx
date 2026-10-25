@@ -8,9 +8,10 @@ import { Wordmark } from "@/components/ui/Wordmark";
 import { PILLAR_CLASSES, PILLAR_LABEL, PILLARS } from "@/lib/pillars";
 
 export const metadata: Metadata = {
-  title: "EMPIRE OS: make the next 90 days your best season",
+  title: { absolute: "EMPIRE OS: make the next 90 days your best season" },
   description:
     "Three missions a day for your career, body, mind and money, planned around your timetable, budget and free time.",
+  alternates: { canonical: "/" },
 };
 
 // The landing page (design/screens/Main.dc.html).

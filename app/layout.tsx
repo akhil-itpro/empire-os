@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Big_Shoulders,
-  Big_Shoulders_Stencil,
-  Schibsted_Grotesk,
-} from "next/font/google";
+import { Schibsted_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const schibstedGrotesk = Schibsted_Grotesk({
@@ -11,20 +9,30 @@ const schibstedGrotesk = Schibsted_Grotesk({
   subsets: ["latin"],
 });
 
-const bigShoulders = Big_Shoulders({
+// Big Shoulders at optical size 72 (the old "Display" cut), as small Latin-only
+// files made from the static fonts in assets/fonts (SIL OFL). About 13 KB each,
+// instead of about 58 KB for Google's variable versions, so headings show sooner.
+const bigShoulders = localFont({
   variable: "--font-big-shoulders",
-  subsets: ["latin"],
-  axes: ["opsz"],
+  src: "./fonts/BigShoulders-ExtraBold-latin.woff2",
+  weight: "800",
+  fallback: ["Arial Narrow", "sans-serif"],
 });
 
-const bigShouldersStencil = Big_Shoulders_Stencil({
+const bigShouldersStencil = localFont({
   variable: "--font-big-shoulders-stencil",
-  subsets: ["latin"],
-  axes: ["opsz"],
+  src: "./fonts/BigShouldersStencil-Black-latin.woff2",
+  weight: "900",
+  fallback: ["Arial Narrow", "sans-serif"],
+  // Only the wordmark, day counter and stamp use it: load it without holding up the page.
+  preload: false,
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "EMPIRE OS", template: "%s | EMPIRE OS" },
+  openGraph: { siteName: "EMPIRE OS", locale: "en_IN", type: "website" },
+  twitter: { card: "summary_large_image" },
   applicationName: "EMPIRE OS",
   appleWebApp: { capable: true, title: "EMPIRE OS", statusBarStyle: "black" },
   description:

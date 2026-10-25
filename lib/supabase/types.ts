@@ -207,6 +207,20 @@ export type NudgeRow = {
   created_at: string;
 };
 
+export type DemoRequestRow = {
+  id: string;
+  name: string;
+  role: "tpo" | "placement_staff" | "principal" | "faculty" | "other";
+  college: string;
+  city: string;
+  email: string;
+  phone: string | null;
+  batch_size: "under_100" | "100_300" | "300_600" | "over_600";
+  note: string | null;
+  handled: boolean;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -230,6 +244,7 @@ export type Database = {
       batches: Table<BatchRow, "id" | "sections" | "grants_pass" | "is_sample" | "created_at">;
       batch_members: Table<BatchMemberRow, "section" | "joined_at">;
       nudges: Table<NudgeRow, "id" | "sent_by" | "seen_at" | "created_at">;
+      demo_requests: Table<DemoRequestRow, "id" | "phone" | "note" | "handled" | "created_at">;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

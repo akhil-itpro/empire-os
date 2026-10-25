@@ -11,6 +11,7 @@ import type { ChecklistItem, FounderSnapshot } from "./founder";
 import type {
   Batch,
   BatchMember,
+  DemoRequest,
   EventName,
   MemberMission,
   ReviewOutcome,
@@ -506,6 +507,47 @@ export class SupabaseSeasonStore implements SeasonStore {
     const { data, error } = await this.db.from("roles").select("role").eq("user_id", userId).eq("role", "founder").maybeSingle();
     if (error) fail("isFounder", error);
     return Boolean(data);
+  }
+
+  // --- Demo requests ---
+
+  async insertDemoRequest(r: DemoRequest) {
+    const { error } = await this.db.from("demo_requests").insert({
+      name: r.name,
+      role: r.role,
+      college: r.college,
+      city: r.city,
+      email: r.email,
+      phone: r.phone,
+      batch_size: r.batchSize,
+      note: r.note,
+    });
+    if (error) fail("insertDemoRequest", error);
+  }
+
+  async countDemoRequests(since: Date, email?: string) {
+    let q = this.db.from("demo_requests").select("id", { count: "exact", head: true }).gte("created_at", since.toISOString());
+    // Emails are saved in lower case by the demo service.
+    if (email !== undefined) q = q.eq("email", email.toLowerCase());
+    const { count, error } = await q;
+    if (error) fail("countDemoRequests", error);
+    return count ?? 0;
+  }
+
+  async listDemoRequests(limit: number) {
+    const { data, error } = await this.db.from("demo_requests").select("*").order("created_at", { ascending: false }).limit(limit);
+    if (error) fail("listDemoRequests", error);
+    return (data ?? []).map((r) => ({
+      name: r.name,
+      role: r.role,
+      college: r.college,
+      city: r.city,
+      email: r.email,
+      phone: r.phone,
+      batchSize: r.batch_size,
+      note: r.note,
+      createdAt: new Date(r.created_at),
+    }));
   }
 
   // --- War Room ---

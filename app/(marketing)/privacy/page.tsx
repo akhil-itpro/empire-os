@@ -35,6 +35,15 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>If you ask for a College HQ demo</h2>
+        <p className="mt-3">
+          The form on our colleges page asks for your name, role, college, city, work email, batch size, and optionally a
+          phone number and a note. We use them only to arrange and follow up on the demo, keep them only while we need
+          them for that conversation, and delete them when you ask at [CONTACT EMAIL].
+        </p>
+      </section>
+
+      <section>
         <h2>What we never collect</h2>
         <p className="mt-3">
           Exact income, bank or card details, government IDs, health conditions, photos, contacts, precise location,

@@ -7,6 +7,7 @@ import { LAUNCH_ITEMS, type ChecklistItem, type FounderSnapshot } from "./founde
 import type {
   Batch,
   BatchMember,
+  DemoRequest,
   EventName,
   Nudge,
   Org,
@@ -310,6 +311,24 @@ export class MemoryStore implements SeasonStore {
 
   async setChecklistItem(id: string, done: boolean) {
     this.checklist = this.checklist.map((c) => (c.id === id ? { ...c, done } : c));
+  }
+
+  // --- Demo requests ---
+
+  demoRequests: (DemoRequest & { createdAt: Date })[] = [];
+
+  async insertDemoRequest(request: DemoRequest) {
+    this.demoRequests.push({ ...request, createdAt: new Date() });
+  }
+
+  async countDemoRequests(since: Date, email?: string) {
+    return this.demoRequests.filter(
+      (r) => r.createdAt >= since && (email === undefined || r.email.toLowerCase() === email.toLowerCase()),
+    ).length;
+  }
+
+  async listDemoRequests(limit: number) {
+    return [...this.demoRequests].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
   }
 
   // --- War Room ---

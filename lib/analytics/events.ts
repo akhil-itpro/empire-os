@@ -13,6 +13,8 @@ export const CLIENT_EVENTS = [
   "share_click",
   "referral_visit",
   "install_tip_view",
+  "colleges_view",
+  "guide_view",
 ] as const;
 
 export type ClientEvent = (typeof CLIENT_EVENTS)[number];

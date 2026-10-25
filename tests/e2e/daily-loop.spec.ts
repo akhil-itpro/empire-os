@@ -41,7 +41,14 @@ test.describe("the daily loop", () => {
     await expect(page.getByText("3 of 3 done")).toBeVisible();
     await expect(page.getByText("Day complete. Bonus +30 XP.")).toBeVisible();
     await expect(page.getByText(/^\d[\d,]* XP$/).first()).toHaveText(`${expected} XP`);
-    await expect(page.getByRole("button", { name: /Undo, mark not done/ })).toHaveCount(3);
+    // Done tickets show a plain check; undo lives in the details sheet, so a double tap can't undo.
+    await expect(page.getByRole("button", { name: /^Mark done:/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Undo/ })).toHaveCount(0);
+    await page.getByRole("button", { name: /Open details/ }).first().click();
+    const undone = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/hq"));
+    await page.getByRole("button", { name: "Undo, mark not done" }).click();
+    await undone;
+    await expect(page.getByText("2 of 3 done")).toBeVisible();
   });
 
   test("the next day brings fresh missions with no duplicates, and the streak grows", async ({ page, context }) => {
