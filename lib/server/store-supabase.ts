@@ -6,10 +6,13 @@ import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
 import { isPackId, type PackId } from "@/lib/plan-engine/packs";
 import { addDays } from "@/lib/game/dates";
-import type { Database, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
+import type { BatchMemberRow, BatchRow, Database, NudgeRow, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
 import type {
+  Batch,
+  BatchMember,
   EventName,
+  MemberMission,
   PendingSettings,
   MissionStatus,
   NewProfile,
@@ -74,6 +77,40 @@ function toMission(row: UserMissionRow): UserMission {
     status: row.status,
     skipReason: row.skip_reason,
     completedAt: row.completed_at ? new Date(row.completed_at) : null,
+  };
+}
+
+function toBatch(row: BatchRow): Batch {
+  return {
+    id: row.id,
+    orgId: row.org_id,
+    name: row.name,
+    startsOn: row.starts_on,
+    endsOn: row.ends_on,
+    joinCode: row.join_code,
+    sections: row.sections ?? [],
+    grantsPass: row.grants_pass,
+    isSample: row.is_sample,
+  };
+}
+
+function toMember(row: BatchMemberRow): BatchMember {
+  return {
+    userId: row.user_id,
+    batchId: row.batch_id,
+    displayName: row.display_name,
+    section: row.section,
+    joinedAt: new Date(row.joined_at),
+  };
+}
+
+function toNudge(row: NudgeRow) {
+  return {
+    id: row.id,
+    batchId: row.batch_id,
+    userId: row.user_id,
+    localDate: row.local_date,
+    seenAt: row.seen_at ? new Date(row.seen_at) : null,
   };
 }
 
@@ -398,6 +435,8 @@ export class SupabaseSeasonStore implements SeasonStore {
       reservations: await own("reservations"),
       referrals,
       events,
+      batch_membership: (await this.db.from("batch_members").select("*").eq("user_id", userId)).data ?? [],
+      nudges: (await this.db.from("nudges").select("batch_id, local_date, seen_at, created_at").eq("user_id", userId)).data ?? [],
     };
   }
 
@@ -465,5 +504,234 @@ export class SupabaseSeasonStore implements SeasonStore {
     const { data, error } = await this.db.from("roles").select("role").eq("user_id", userId).eq("role", "founder").maybeSingle();
     if (error) fail("isFounder", error);
     return Boolean(data);
+  }
+
+  // --- College HQ ---
+
+  async createOrg(name: string, city: string | null) {
+    const { data, error } = await this.db.from("orgs").insert({ name, city }).select("id, name, city").single();
+    if (error) fail("createOrg", error);
+    return data;
+  }
+
+  async getOrg(orgId: string) {
+    const { data, error } = await this.db.from("orgs").select("id, name, city").eq("id", orgId).maybeSingle();
+    if (error) fail("getOrg", error);
+    return data;
+  }
+
+  async listOrgs() {
+    const [orgs, batches, members, admins] = await Promise.all([
+      this.db.from("orgs").select("id, name, city").order("created_at"),
+      this.db.from("batches").select("*").order("starts_on"),
+      this.db.from("batch_members").select("batch_id"),
+      this.db.from("org_admins").select("org_id"),
+    ]);
+    for (const r of [orgs, batches, members, admins]) if (r.error) fail("listOrgs", r.error);
+    return (orgs.data ?? []).map((org) => ({
+      org,
+      batches: (batches.data ?? [])
+        .filter((b) => b.org_id === org.id)
+        .map((b) => ({ ...toBatch(b), members: (members.data ?? []).filter((m) => m.batch_id === b.id).length })),
+      admins: (admins.data ?? []).filter((a) => a.org_id === org.id).length,
+    }));
+  }
+
+  async addOrgAdmin(orgId: string, userId: string) {
+    const { error } = await this.db.from("org_admins").insert({ org_id: orgId, user_id: userId });
+    if (error && error.code !== UNIQUE_VIOLATION) fail("addOrgAdmin", error);
+  }
+
+  async adminOrgIds(userId: string) {
+    const { data, error } = await this.db.from("org_admins").select("org_id").eq("user_id", userId);
+    if (error) fail("adminOrgIds", error);
+    return (data ?? []).map((r) => r.org_id);
+  }
+
+  async createOrgInvite(orgId: string, tokenHash: string, label: string | null, createdBy: string, expiresAt: Date) {
+    const { error } = await this.db.from("org_invites").insert({
+      org_id: orgId,
+      token_hash: tokenHash,
+      label,
+      created_by: createdBy,
+      expires_at: expiresAt.toISOString(),
+    });
+    if (error) fail("createOrgInvite", error);
+  }
+
+  async claimOrgInvite(tokenHash: string, userId: string, at: Date) {
+    // One conditional update, so an invite can't be used twice.
+    const { data, error } = await this.db
+      .from("org_invites")
+      .update({ used_by: userId, used_at: at.toISOString() })
+      .eq("token_hash", tokenHash)
+      .is("used_by", null)
+      .gt("expires_at", at.toISOString())
+      .select("org_id")
+      .maybeSingle();
+    if (error) fail("claimOrgInvite", error);
+    return data?.org_id ?? null;
+  }
+
+  async createBatch(b: Omit<Batch, "id">) {
+    const { data, error } = await this.db
+      .from("batches")
+      .insert({
+        org_id: b.orgId,
+        name: b.name,
+        starts_on: b.startsOn,
+        ends_on: b.endsOn,
+        join_code: b.joinCode,
+        sections: b.sections,
+        grants_pass: b.grantsPass,
+        is_sample: b.isSample,
+      })
+      .select("*")
+      .single();
+    if (error?.code === UNIQUE_VIOLATION) return "code_taken" as const;
+    if (error) fail("createBatch", error);
+    return toBatch(data);
+  }
+
+  async getBatch(batchId: string) {
+    const { data, error } = await this.db.from("batches").select("*").eq("id", batchId).maybeSingle();
+    if (error) fail("getBatch", error);
+    return data ? toBatch(data) : null;
+  }
+
+  async findBatchByCode(joinCode: string) {
+    const { data, error } = await this.db.from("batches").select("*").eq("join_code", joinCode).maybeSingle();
+    if (error) fail("findBatchByCode", error);
+    return data ? toBatch(data) : null;
+  }
+
+  async listBatches(orgIds: string[]) {
+    if (orgIds.length === 0) return [];
+    const { data, error } = await this.db
+      .from("batches")
+      .select("*")
+      .in("org_id", orgIds)
+      .order("starts_on", { ascending: false });
+    if (error) fail("listBatches", error);
+    return (data ?? []).map(toBatch);
+  }
+
+  async getMembership(userId: string) {
+    const { data, error } = await this.db.from("batch_members").select("*").eq("user_id", userId).maybeSingle();
+    if (error) fail("getMembership", error);
+    return data ? toMember(data) : null;
+  }
+
+  async insertMember(m: Omit<BatchMember, "joinedAt"> & { consentedAt: Date }) {
+    const { error } = await this.db.from("batch_members").insert({
+      user_id: m.userId,
+      batch_id: m.batchId,
+      display_name: m.displayName,
+      section: m.section,
+      consented_at: m.consentedAt.toISOString(),
+    });
+    if (error?.code === UNIQUE_VIOLATION) return "exists" as const;
+    if (error) fail("insertMember", error);
+    return "created" as const;
+  }
+
+  async deleteMember(userId: string) {
+    const { error } = await this.db.from("batch_members").delete().eq("user_id", userId);
+    if (error) fail("deleteMember", error);
+  }
+
+  async listMembers(batchId: string) {
+    const { data, error } = await this.db.from("batch_members").select("*").eq("batch_id", batchId);
+    if (error) fail("listMembers", error);
+    return (data ?? []).map(toMember);
+  }
+
+  async listMemberMissions(userIds: string[], from: string, to: string) {
+    const out: MemberMission[] = [];
+    // In chunks, so the list of ids stays well inside URL limits.
+    for (let i = 0; i < userIds.length; i += 200) {
+      const { data, error } = await this.db
+        .from("user_missions")
+        .select("user_id, local_date, status, mission_id")
+        .in("user_id", userIds.slice(i, i + 200))
+        .gte("local_date", from)
+        .lte("local_date", to)
+        .limit(100000);
+      if (error) fail("listMemberMissions", error);
+      for (const r of data ?? []) {
+        out.push({ userId: r.user_id, localDate: r.local_date, status: r.status, missionId: r.mission_id });
+      }
+    }
+    return out;
+  }
+
+  async upsertEntitlement(userId: string, grant: NewEntitlement) {
+    const { error } = await this.db.from("entitlements").upsert(
+      {
+        user_id: userId,
+        kind: grant.kind,
+        starts_at: grant.startsAt.toISOString(),
+        ends_at: grant.endsAt.toISOString(),
+        source: grant.source,
+      },
+      { onConflict: "user_id,source" },
+    );
+    if (error) fail("upsertEntitlement", error);
+  }
+
+  async endEntitlement(userId: string, source: string, at: Date) {
+    const iso = at.toISOString();
+    const removed = await this.db
+      .from("entitlements")
+      .delete()
+      .eq("user_id", userId)
+      .eq("source", source)
+      .gte("starts_at", iso);
+    if (removed.error) fail("endEntitlement", removed.error);
+    const ended = await this.db
+      .from("entitlements")
+      .update({ ends_at: iso })
+      .eq("user_id", userId)
+      .eq("source", source)
+      .gt("ends_at", iso);
+    if (ended.error) fail("endEntitlement", ended.error);
+  }
+
+  async insertNudge(batchId: string, userId: string, sentBy: string, localDate: string) {
+    const { error } = await this.db
+      .from("nudges")
+      .insert({ batch_id: batchId, user_id: userId, sent_by: sentBy, local_date: localDate });
+    if (error?.code === UNIQUE_VIOLATION) return "exists" as const;
+    if (error) fail("insertNudge", error);
+    return "created" as const;
+  }
+
+  async listNudges(batchId: string, from: string) {
+    const { data, error } = await this.db.from("nudges").select("*").eq("batch_id", batchId).gte("local_date", from);
+    if (error) fail("listNudges", error);
+    return (data ?? []).map(toNudge);
+  }
+
+  async unseenNudge(userId: string) {
+    const { data, error } = await this.db
+      .from("nudges")
+      .select("*")
+      .eq("user_id", userId)
+      .is("seen_at", null)
+      .order("local_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) fail("unseenNudge", error);
+    return data ? toNudge(data) : null;
+  }
+
+  async markNudgeSeen(userId: string, nudgeId: string, at: Date) {
+    const { error } = await this.db
+      .from("nudges")
+      .update({ seen_at: at.toISOString() })
+      .eq("id", nudgeId)
+      .eq("user_id", userId)
+      .is("seen_at", null);
+    if (error) fail("markNudgeSeen", error);
   }
 }

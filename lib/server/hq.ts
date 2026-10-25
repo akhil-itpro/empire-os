@@ -1,6 +1,6 @@
 import "server-only";
-import { hasSeasonPass, showTrialEndingBanner } from "@/lib/game/access";
-import { addDays, localDate, seasonPosition } from "@/lib/game/dates";
+import { hasSeasonPass, passCoversDate, showTrialEndingBanner } from "@/lib/game/access";
+import { addDays, seasonPosition } from "@/lib/game/dates";
 import { empireScore, pillarScores } from "@/lib/game/score";
 import { computeStreak, type StreakState } from "@/lib/game/streak";
 import { rankFor, type RankProgress } from "@/lib/game/xp";
@@ -67,10 +67,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
     activeDays,
     today: t.today,
     seasonStart: t.profile.seasonStart,
-    hasShieldOn: (date) =>
-      entitlements.some(
-        (e) => e.kind === "season_pass" && localDate(e.startsAt, tz) <= date && date < localDate(e.endsAt, tz),
-      ),
+    hasShieldOn: passCoversDate(entitlements, tz),
   });
 
   const counted = recent

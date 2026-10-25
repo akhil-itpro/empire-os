@@ -159,6 +159,54 @@ export type LaunchChecklistRow = {
   done_by: string | null;
 };
 
+export type OrgRow = { id: string; name: string; city: string | null; created_at: string };
+
+export type OrgAdminRow = { org_id: string; user_id: string; created_at: string };
+
+export type OrgInviteRow = {
+  id: string;
+  org_id: string;
+  token_hash: string;
+  label: string | null;
+  created_by: string | null;
+  expires_at: string;
+  used_by: string | null;
+  used_at: string | null;
+  created_at: string;
+};
+
+export type BatchRow = {
+  id: string;
+  org_id: string;
+  name: string;
+  starts_on: string;
+  ends_on: string;
+  join_code: string;
+  sections: string[];
+  grants_pass: boolean;
+  is_sample: boolean;
+  created_at: string;
+};
+
+export type BatchMemberRow = {
+  user_id: string;
+  batch_id: string;
+  display_name: string;
+  section: string | null;
+  consented_at: string;
+  joined_at: string;
+};
+
+export type NudgeRow = {
+  id: string;
+  batch_id: string;
+  user_id: string;
+  sent_by: string | null;
+  local_date: string;
+  seen_at: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -176,6 +224,12 @@ export type Database = {
       mission_library: Table<MissionLibraryRow, "archetypes" | "tags" | "pack" | "active">;
       packs: Table<PackRow>;
       launch_checklist: Table<LaunchChecklistRow, "done" | "done_at" | "done_by">;
+      orgs: Table<OrgRow, "id" | "city" | "created_at">;
+      org_admins: Table<OrgAdminRow, "created_at">;
+      org_invites: Table<OrgInviteRow, "id" | "label" | "created_by" | "used_by" | "used_at" | "created_at">;
+      batches: Table<BatchRow, "id" | "sections" | "grants_pass" | "is_sample" | "created_at">;
+      batch_members: Table<BatchMemberRow, "section" | "joined_at">;
+      nudges: Table<NudgeRow, "id" | "sent_by" | "seen_at" | "created_at">;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

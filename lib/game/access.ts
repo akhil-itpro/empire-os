@@ -1,3 +1,4 @@
+import { localDate, type LocalDate } from "./dates";
 import { TRIAL_DAYS } from "./rules";
 
 export type Entitlement = {
@@ -41,9 +42,22 @@ export function fullAccessUntil(now: Date, trialEnd: Date, entitlements: Entitle
   return covered ? new Date(cursor) : null;
 }
 
-/** True while a Season Pass covers now; streak shields are for pass holders only. */
+/** A Season Pass, or a paid college batch (which gives Season Pass access for its season). */
+export function isPassLike(e: Entitlement): boolean {
+  return e.kind === "season_pass" || e.kind === "batch";
+}
+
+/** True while Season Pass access covers now; streak shields are for pass holders only. */
 export function hasSeasonPass(now: Date, entitlements: Entitlement[]): boolean {
-  return entitlements.some((e) => e.kind === "season_pass" && e.startsAt <= now && now < e.endsAt);
+  return entitlements.some((e) => isPassLike(e) && e.startsAt <= now && now < e.endsAt);
+}
+
+/** For computeStreak: true on the student's local dates that Season Pass access covered. */
+export function passCoversDate(entitlements: Entitlement[], timeZone: string) {
+  return (date: LocalDate) =>
+    entitlements.some(
+      (e) => isPassLike(e) && localDate(e.startsAt, timeZone) <= date && date < localDate(e.endsAt, timeZone),
+    );
 }
 
 /** Show the day-6 banner from 24 hours before the trial ends, only if nothing continues access after it. */

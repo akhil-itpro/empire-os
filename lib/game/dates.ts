@@ -34,6 +34,28 @@ export function localDate(now: Date, timeZone: string): LocalDate {
   }).format(now);
 }
 
+/** The moment a local date begins (midnight) in `timeZone`. */
+export function startOfLocalDay(date: LocalDate, timeZone: string): Date {
+  const guess = Date.parse(`${date}T00:00:00Z`);
+  // The zone's offset at a moment: how far its wall clock is ahead of UTC.
+  const offset = (ms: number) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).formatToParts(new Date(ms));
+    const n = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+    return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - ms;
+  };
+  const first = guess - offset(guess);
+  return new Date(guess - offset(first));
+}
+
 function toUtcMs(date: LocalDate): number {
   return Date.parse(`${date}T00:00:00Z`);
 }

@@ -89,6 +89,37 @@ export type Reservation = { priceInr: number; founderPrice: boolean; createdAt: 
 
 export type ReferralStatus = "signed_up" | "qualified" | "rewarded" | "blocked";
 
+// College HQ (docs/PRODUCT.md section 9).
+export type Org = { id: string; name: string; city: string | null };
+
+export type Batch = {
+  id: string;
+  orgId: string;
+  name: string;
+  startsOn: LocalDate;
+  endsOn: LocalDate;
+  joinCode: string;
+  sections: string[];
+  /** A paid batch: members get Season Pass access for the season dates. */
+  grantsPass: boolean;
+  /** A demo batch: College HQ shows generated, labelled sample data. */
+  isSample: boolean;
+};
+
+export type BatchMember = {
+  userId: string;
+  batchId: string;
+  /** What the college sees: first name and an optional last-name initial, e.g. "Aarav K.". */
+  displayName: string;
+  section: string | null;
+  joinedAt: Date;
+};
+
+export type Nudge = { id: string; batchId: string; userId: string; localDate: LocalDate; seenAt: Date | null };
+
+/** Mission rows a college may see: day, status and which mission. Nothing else. */
+export type MemberMission = { userId: string; localDate: LocalDate; status: MissionStatus; missionId: string };
+
 export interface SeasonStore {
   getProfile(userId: string): Promise<Profile | null>;
   /** "exists" when the user already has a profile (a second tap on Start, for example). */
@@ -164,6 +195,40 @@ export interface SeasonStore {
   deleteUser(userId: string): Promise<void>;
   /** True if any login or profile still exists for the user (to report the true result). */
   userExists(userId: string): Promise<boolean>;
+
+  // --- College HQ. Callers check the founder role or org admin rights first. ---
+  createOrg(name: string, city: string | null): Promise<Org>;
+  getOrg(orgId: string): Promise<Org | null>;
+  /** Every organisation with its batches and member counts (Founder HQ). */
+  listOrgs(): Promise<{ org: Org; batches: (Batch & { members: number })[]; admins: number }[]>;
+  addOrgAdmin(orgId: string, userId: string): Promise<void>;
+  /** Organisations this user administers. */
+  adminOrgIds(userId: string): Promise<string[]>;
+  createOrgInvite(orgId: string, tokenHash: string, label: string | null, createdBy: string, expiresAt: Date): Promise<void>;
+  /** Uses an invite once, if it exists and hasn't expired. Returns its organisation. */
+  claimOrgInvite(tokenHash: string, userId: string, at: Date): Promise<string | null>;
+  /** "code_taken" when the join code already exists (the caller tries another). */
+  createBatch(batch: Omit<Batch, "id">): Promise<Batch | "code_taken">;
+  getBatch(batchId: string): Promise<Batch | null>;
+  findBatchByCode(joinCode: string): Promise<Batch | null>;
+  listBatches(orgIds: string[]): Promise<Batch[]>;
+  getMembership(userId: string): Promise<BatchMember | null>;
+  /** "exists" when the student is already in a batch (one at a time). */
+  insertMember(member: Omit<BatchMember, "joinedAt"> & { consentedAt: Date }): Promise<"created" | "exists">;
+  deleteMember(userId: string): Promise<void>;
+  listMembers(batchId: string): Promise<BatchMember[]>;
+  /** Mission rows of these students between two dates, inclusive. */
+  listMemberMissions(userIds: string[], from: LocalDate, to: LocalDate): Promise<MemberMission[]>;
+  /** Adds access, or updates the dates of the grant from the same source. */
+  upsertEntitlement(userId: string, grant: NewEntitlement): Promise<void>;
+  /** Ends a grant at `at` (deletes it if it hadn't started yet). */
+  endEntitlement(userId: string, source: string, at: Date): Promise<void>;
+  /** "exists" when the student already got a reminder that day. */
+  insertNudge(batchId: string, userId: string, sentBy: string, localDate: LocalDate): Promise<"created" | "exists">;
+  listNudges(batchId: string, from: LocalDate): Promise<Nudge[]>;
+  /** The newest reminder the student hasn't dismissed. */
+  unseenNudge(userId: string): Promise<Nudge | null>;
+  markNudgeSeen(userId: string, nudgeId: string, at: Date): Promise<void>;
 
   /** Founder HQ only (the caller checks the founder role): raw rows from `since` on. */
   founderSnapshot(since: LocalDate): Promise<FounderSnapshot>;

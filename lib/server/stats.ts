@@ -1,4 +1,5 @@
 import "server-only";
+import { passCoversDate } from "@/lib/game/access";
 import { addDays, localDate } from "@/lib/game/dates";
 import { pillarScores } from "@/lib/game/score";
 import { computeStreak } from "@/lib/game/streak";
@@ -44,13 +45,7 @@ export async function loadStats(deps: Deps, userId: string): Promise<Result<Stat
     activeDays,
     today,
     seasonStart: profile.seasonStart,
-    hasShieldOn: (date) =>
-      entitlements.some(
-        (e) =>
-          e.kind === "season_pass" &&
-          localDate(e.startsAt, profile.timeZone) <= date &&
-          date < localDate(e.endsAt, profile.timeZone),
-      ),
+    hasShieldOn: passCoversDate(entitlements, profile.timeZone),
   });
 
   const from = [addDays(today, -13), profile.seasonStart].sort().at(-1)!;

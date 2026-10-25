@@ -5,7 +5,11 @@ import type { Entitlement, NewEntitlement } from "@/lib/game/access";
 import type { PackId } from "@/lib/plan-engine/packs";
 import { LAUNCH_ITEMS, type ChecklistItem, type FounderSnapshot } from "./founder";
 import type {
+  Batch,
+  BatchMember,
   EventName,
+  Nudge,
+  Org,
   PendingSettings,
   MissionStatus,
   NewProfile,
@@ -19,6 +23,15 @@ import type {
   UserMission,
   XpKind,
 } from "@/lib/server/store";
+
+const memberOut = (m: BatchMember): BatchMember => ({
+  userId: m.userId,
+  batchId: m.batchId,
+  displayName: m.displayName,
+  section: m.section,
+  joinedAt: m.joinedAt,
+});
+const nudgeOut = (n: Nudge): Nudge => ({ id: n.id, batchId: n.batchId, userId: n.userId, localDate: n.localDate, seenAt: n.seenAt });
 
 export class MemoryStore implements SeasonStore {
   profiles = new Map<string, Profile>();
@@ -232,6 +245,8 @@ export class MemoryStore implements SeasonStore {
       journal: this.journal.filter((j) => j.userId === userId),
       referrals: this.referrals.filter((r) => r.referrerId === userId || r.referredId === userId),
       events: this.events.filter((e) => e.userId === userId),
+      batch_membership: this.members.filter((m) => m.userId === userId),
+      nudges: this.nudges.filter((n) => n.userId === userId).map(nudgeOut),
     };
   }
 
@@ -245,6 +260,9 @@ export class MemoryStore implements SeasonStore {
     this.journal = this.journal.filter((j) => j.userId !== userId);
     this.reservations = this.reservations.filter((r) => r.userId !== userId);
     this.referrals = this.referrals.filter((r) => r.referrerId !== userId && r.referredId !== userId);
+    this.members = this.members.filter((m) => m.userId !== userId);
+    this.nudges = this.nudges.filter((n) => n.userId !== userId);
+    this.orgAdmins = this.orgAdmins.filter((a) => a.userId !== userId);
     // Events stay, but no longer linked to anyone (like the database's "on delete set null").
     this.events = this.events.map((e) => (e.userId === userId ? { ...e, userId: "" } : e));
   }
@@ -276,5 +294,136 @@ export class MemoryStore implements SeasonStore {
 
   async setChecklistItem(id: string, done: boolean) {
     this.checklist = this.checklist.map((c) => (c.id === id ? { ...c, done } : c));
+  }
+
+  // --- College HQ ---
+
+  orgs: Org[] = [];
+  orgAdmins: { orgId: string; userId: string }[] = [];
+  orgInvites: { orgId: string; tokenHash: string; label: string | null; expiresAt: Date; usedBy: string | null }[] = [];
+  batches: Batch[] = [];
+  members: (BatchMember & { consentedAt: Date })[] = [];
+  nudges: (Nudge & { sentBy: string })[] = [];
+
+  async createOrg(name: string, city: string | null) {
+    const org = { id: this.uuid(), name, city };
+    this.orgs.push(org);
+    return { ...org };
+  }
+
+  async getOrg(orgId: string) {
+    const org = this.orgs.find((o) => o.id === orgId);
+    return org ? { ...org } : null;
+  }
+
+  async listOrgs() {
+    return this.orgs.map((org) => ({
+      org: { ...org },
+      batches: this.batches
+        .filter((b) => b.orgId === org.id)
+        .map((b) => ({ ...b, members: this.members.filter((m) => m.batchId === b.id).length })),
+      admins: this.orgAdmins.filter((a) => a.orgId === org.id).length,
+    }));
+  }
+
+  async addOrgAdmin(orgId: string, userId: string) {
+    if (!this.orgAdmins.some((a) => a.orgId === orgId && a.userId === userId)) this.orgAdmins.push({ orgId, userId });
+  }
+
+  async adminOrgIds(userId: string) {
+    return this.orgAdmins.filter((a) => a.userId === userId).map((a) => a.orgId);
+  }
+
+  async createOrgInvite(orgId: string, tokenHash: string, label: string | null, _createdBy: string, expiresAt: Date) {
+    this.orgInvites.push({ orgId, tokenHash, label, expiresAt, usedBy: null });
+  }
+
+  async claimOrgInvite(tokenHash: string, userId: string, at: Date) {
+    const invite = this.orgInvites.find((i) => i.tokenHash === tokenHash && i.usedBy === null && at < i.expiresAt);
+    if (!invite) return null;
+    invite.usedBy = userId;
+    return invite.orgId;
+  }
+
+  async createBatch(batch: Omit<Batch, "id">) {
+    if (this.batches.some((b) => b.joinCode === batch.joinCode)) return "code_taken" as const;
+    const created = { ...batch, id: this.uuid(), sections: [...batch.sections] };
+    this.batches.push(created);
+    return { ...created };
+  }
+
+  async getBatch(batchId: string) {
+    const b = this.batches.find((x) => x.id === batchId);
+    return b ? { ...b } : null;
+  }
+
+  async findBatchByCode(joinCode: string) {
+    const b = this.batches.find((x) => x.joinCode === joinCode);
+    return b ? { ...b } : null;
+  }
+
+  async listBatches(orgIds: string[]) {
+    return this.batches.filter((b) => orgIds.includes(b.orgId)).map((b) => ({ ...b }));
+  }
+
+  async getMembership(userId: string) {
+    const m = this.members.find((x) => x.userId === userId);
+    return m ? memberOut(m) : null;
+  }
+
+  async insertMember(member: Omit<BatchMember, "joinedAt"> & { consentedAt: Date }) {
+    if (this.members.some((m) => m.userId === member.userId)) return "exists" as const;
+    this.members.push({ ...member, joinedAt: member.consentedAt });
+    return "created" as const;
+  }
+
+  async deleteMember(userId: string) {
+    this.members = this.members.filter((m) => m.userId !== userId);
+  }
+
+  async listMembers(batchId: string) {
+    return this.members.filter((m) => m.batchId === batchId).map(memberOut);
+  }
+
+  async listMemberMissions(userIds: string[], from: string, to: string) {
+    const ids = new Set(userIds);
+    return this.missions
+      .filter((m) => ids.has(m.userId) && m.localDate >= from && m.localDate <= to)
+      .map((m) => ({ userId: m.userId, localDate: m.localDate, status: m.status, missionId: m.missionId }));
+  }
+
+  async upsertEntitlement(userId: string, grant: NewEntitlement) {
+    const existing = this.grants.find((g) => g.userId === userId && g.source === grant.source);
+    if (existing) Object.assign(existing, { kind: grant.kind, startsAt: grant.startsAt, endsAt: grant.endsAt });
+    else this.grants.push({ ...grant, userId });
+  }
+
+  async endEntitlement(userId: string, source: string, at: Date) {
+    const g = this.grants.find((x) => x.userId === userId && x.source === source);
+    if (!g) return;
+    if (g.startsAt >= at) this.grants = this.grants.filter((x) => x !== g);
+    else if (g.endsAt > at) g.endsAt = at;
+  }
+
+  async insertNudge(batchId: string, userId: string, sentBy: string, localDate: string) {
+    if (this.nudges.some((n) => n.userId === userId && n.localDate === localDate)) return "exists" as const;
+    this.nudges.push({ id: this.uuid(), batchId, userId, sentBy, localDate, seenAt: null });
+    return "created" as const;
+  }
+
+  async listNudges(batchId: string, from: string) {
+    return this.nudges.filter((n) => n.batchId === batchId && n.localDate >= from).map(nudgeOut);
+  }
+
+  async unseenNudge(userId: string) {
+    const n = this.nudges
+      .filter((x) => x.userId === userId && x.seenAt === null)
+      .sort((a, b) => b.localDate.localeCompare(a.localDate))[0];
+    return n ? nudgeOut(n) : null;
+  }
+
+  async markNudgeSeen(userId: string, nudgeId: string, at: Date) {
+    const n = this.nudges.find((x) => x.id === nudgeId && x.userId === userId);
+    if (n && n.seenAt === null) n.seenAt = at;
   }
 }

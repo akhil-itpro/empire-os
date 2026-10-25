@@ -117,13 +117,87 @@ async function studentChecks(me: { id: string; client: SupabaseClient }, other: 
   check(`${label} can log their own events`, !own.error, own.error?.message);
 }
 
+/**
+ * College HQ: two colleges, each with a TPO and one student in a batch. A TPO sees
+ * only their own college's members and their missions; a student who left vanishes.
+ */
+async function collegeChecks(a: { id: string; client: SupabaseClient }, b: { id: string; client: SupabaseClient }, tpos: string[]) {
+  const today = new Date().toISOString().slice(0, 10);
+  const orgs = await admin.from("orgs").insert([{ name: "RLS College A" }, { name: "RLS College B" }]).select("id");
+  if (orgs.error || !orgs.data) throw new Error(`orgs: ${orgs.error?.message}`);
+  const [orgA, orgB] = orgs.data.map((o) => o.id);
+  try {
+    const tpoA = await makeTpo("a", orgA);
+    const tpoB = await makeTpo("b", orgB);
+    tpos.push(tpoA.id, tpoB.id);
+    const start = new Date(Date.now() - 5 * 86_400_000).toISOString().slice(0, 10);
+    const end = new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10);
+    const batches = await admin
+      .from("batches")
+      .insert([
+        { org_id: orgA, name: "RLS A", starts_on: start, ends_on: end, join_code: `R${randomText(7).toUpperCase()}` },
+        { org_id: orgB, name: "RLS B", starts_on: start, ends_on: end, join_code: `R${randomText(7).toUpperCase()}` },
+      ])
+      .select("id");
+    if (batches.error || !batches.data) throw new Error(`batches: ${batches.error?.message}`);
+    const [batchA, batchB] = batches.data.map((x) => x.id);
+    await admin.from("batch_members").insert([
+      { user_id: a.id, batch_id: batchA, display_name: "Test A.", consented_at: new Date().toISOString() },
+      { user_id: b.id, batch_id: batchB, display_name: "Test B.", consented_at: new Date().toISOString() },
+    ]);
+
+    const members = await tpoA.client.from("batch_members").select("user_id");
+    check("TPO of college A sees only college A's members", members.data?.length === 1 && members.data[0].user_id === a.id, members.error?.message);
+    const missions = await tpoA.client.from("user_missions").select("user_id");
+    check("TPO of college A reads only their members' missions", (missions.data ?? []).length > 0 && (missions.data ?? []).every((m) => m.user_id === a.id), missions.error?.message);
+    const otherBatches = await tpoA.client.from("batches").select("id").eq("id", batchB);
+    check("TPO of college A can't see college B's batch", (otherBatches.data ?? []).length === 0, otherBatches.error?.message);
+    const profiles = await tpoA.client.from("profiles").select("id");
+    check("TPO can't read student profiles (quiz answers)", (profiles.data ?? []).length === 0, profiles.error?.message);
+    const journals = await tpoA.client.from("journal_entries").select("user_id");
+    check("TPO can't read student journals", (journals.data ?? []).length === 0, journals.error?.message);
+    await expectDenied("TPO can't add themselves to another college", () => tpoA.client.from("org_admins").insert({ org_id: orgB, user_id: tpoA.id }).select());
+    await expectDenied("TPO can't add a student to their batch", () =>
+      tpoA.client.from("batch_members").insert({ user_id: b.id, batch_id: batchA, display_name: "x", consented_at: new Date().toISOString() }).select(),
+    );
+    await expectDenied("TPO can't send reminders without the server", () =>
+      tpoA.client.from("nudges").insert({ batch_id: batchA, user_id: a.id, local_date: today }).select(),
+    );
+    await expectDenied("A student can't move themselves to another batch", () =>
+      a.client.from("batch_members").update({ batch_id: batchB }).eq("user_id", a.id).select(),
+    );
+
+    await admin.from("batch_members").delete().eq("user_id", a.id);
+    const afterLeave = await tpoA.client.from("batch_members").select("user_id");
+    check("A student who left is not visible to the college", (afterLeave.data ?? []).length === 0, afterLeave.error?.message);
+    const missionsAfter = await tpoA.client.from("user_missions").select("user_id");
+    check("A student who left: their missions are not visible either", (missionsAfter.data ?? []).length === 0, missionsAfter.error?.message);
+  } finally {
+    await admin.from("orgs").delete().in("id", [orgA, orgB]);
+  }
+}
+
+async function makeTpo(label: string, orgId: string) {
+  const email = `rls-tpo-${label}-${randomText(8)}@example.com`;
+  const password = `${randomText(20)}A1!`;
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error || !data.user) throw new Error(`createUser tpo ${label}: ${error?.message}`);
+  await admin.from("org_admins").insert({ org_id: orgId, user_id: data.user.id });
+  const client = createClient(url!, publishable!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const signIn = await client.auth.signInWithPassword({ email, password });
+  if (signIn.error) throw new Error(`signIn tpo ${label}: ${signIn.error.message}`);
+  return { id: data.user.id, client };
+}
+
 let a: Awaited<ReturnType<typeof makeStudent>> | undefined;
 let b: Awaited<ReturnType<typeof makeStudent>> | undefined;
+const tpos: string[] = [];
 try {
   a = await makeStudent("a");
   b = await makeStudent("b");
   await studentChecks(a, b, "Student A");
   await studentChecks(b, a, "Student B");
+  await collegeChecks(a, b, tpos);
 
   const anon = createClient(url, publishable, { auth: { persistSession: false } });
   for (const table of ["profiles", "user_missions", "journal_entries", "user_stats", "mission_library", "roles"] as const) {
@@ -136,6 +210,7 @@ try {
   check("Setup", false, error instanceof Error ? error.message : String(error));
 } finally {
   for (const s of [a, b]) if (s) await admin.auth.admin.deleteUser(s.id);
+  for (const id of tpos) await admin.auth.admin.deleteUser(id);
 }
 
 const failed = results.filter((r) => !r.pass).length;

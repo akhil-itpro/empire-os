@@ -1,7 +1,7 @@
 // The Season Pass offer and reserve mode (docs/PRODUCT.md section 7). Until payments
 // are live, "Reserve founder price" saves a reservation and no money moves. The price
 // always comes from the server's own count, never from the browser.
-import { fullAccessUntil, hasSeasonPass } from "@/lib/game/access";
+import { fullAccessUntil, hasSeasonPass, isPassLike } from "@/lib/game/access";
 import { localDate, seasonPosition, type LocalDate } from "@/lib/game/dates";
 import { passOffer, PAYMENTS_LIVE, paywallSource, type PassOffer } from "@/lib/game/pass";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
@@ -36,7 +36,7 @@ export async function loadPass(deps: Deps, userId: string): Promise<Result<PassD
   ]);
   const tz = profile.timeZone;
   const pass = entitlements
-    .filter((e) => e.kind === "season_pass" && e.startsAt <= now && now < e.endsAt)
+    .filter((e) => isPassLike(e) && e.startsAt <= now && now < e.endsAt)
     .sort((a, b) => b.endsAt.getTime() - a.endsAt.getTime())[0];
   const until = fullAccessUntil(now, profile.trialEndsAt, entitlements);
   return {

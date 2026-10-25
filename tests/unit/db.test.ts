@@ -200,3 +200,88 @@ describe("data rules", () => {
     expect((await rows(`select count(*)::int as n from public.events where name = 'signup_done' and user_id is null`))[0]).toEqual({ n: 1 });
   });
 });
+
+describe("College HQ", () => {
+  const TPO_A = "00000000-0000-4000-8000-0000000000a1";
+  const TPO_B = "00000000-0000-4000-8000-0000000000b1";
+  const S1 = "00000000-0000-4000-8000-000000000051";
+  const S2 = "00000000-0000-4000-8000-000000000052";
+  const S3 = "00000000-0000-4000-8000-000000000053";
+  const ORG_A = "00000000-0000-4000-8000-00000000a000";
+  const ORG_B = "00000000-0000-4000-8000-00000000b000";
+  const BATCH_A = "00000000-0000-4000-8000-0000000ba000";
+  const BATCH_B = "00000000-0000-4000-8000-0000000bb000";
+
+  beforeAll(async () => {
+    await db.exec(`
+      insert into auth.users (id) values ('${TPO_A}'), ('${TPO_B}'), ('${S1}'), ('${S2}'), ('${S3}');
+      ${profileSql(S1, "SSSSS1")}; ${profileSql(S2, "SSSSS2")}; ${profileSql(S3, "SSSSS3")};
+      insert into public.orgs (id, name) values ('${ORG_A}', 'College A'), ('${ORG_B}', 'College B');
+      insert into public.org_admins (org_id, user_id) values ('${ORG_A}', '${TPO_A}'), ('${ORG_B}', '${TPO_B}');
+      insert into public.batches (id, org_id, name, starts_on, ends_on, join_code) values
+        ('${BATCH_A}', '${ORG_A}', 'CSE 2027', current_date - 10, current_date + 80, 'JOINAAAA'),
+        ('${BATCH_B}', '${ORG_B}', 'ECE 2027', current_date - 10, current_date + 80, 'JOINBBBB');
+      insert into public.batch_members (user_id, batch_id, display_name, consented_at) values
+        ('${S1}', '${BATCH_A}', 'One A.', now()), ('${S2}', '${BATCH_B}', 'Two B.', now()), ('${S3}', '${BATCH_A}', 'Three C.', now());
+      insert into public.user_missions (user_id, local_date, slot, mission_id, pillar, minutes, xp) values
+        ('${S1}', current_date, 1, 'car-01', 'career', 5, 30),
+        ('${S1}', current_date - 30, 1, 'car-02', 'career', 5, 30),
+        ('${S2}', current_date, 1, 'car-01', 'career', 5, 30),
+        ('${S3}', current_date, 1, 'car-01', 'career', 5, 30);
+      insert into public.journal_entries (user_id, local_date, body) values ('${S1}', current_date, 'private');
+      insert into public.nudges (batch_id, user_id, local_date) values ('${BATCH_A}', '${S1}', current_date), ('${BATCH_B}', '${S2}', current_date);
+    `);
+  });
+
+  it("a TPO sees only their own college's batches, members and nudges", async () => {
+    await as("authenticated", TPO_A, async () => {
+      expect(await rows("select name from public.orgs")).toEqual([{ name: "College A" }]);
+      expect(await rows("select name from public.batches")).toEqual([{ name: "CSE 2027" }]);
+      expect((await rows("select display_name from public.batch_members order by display_name")).map((r) => r.display_name)).toEqual(["One A.", "Three C."]);
+      expect((await rows("select user_id from public.nudges")).map((r) => r.user_id)).toEqual([S1]);
+    });
+  });
+
+  it("a TPO reads members' missions only inside the batch season, and never their profile or journal", async () => {
+    await as("authenticated", TPO_A, async () => {
+      const missions = await rows("select user_id, mission_id from public.user_missions order by user_id");
+      expect(missions).toEqual([
+        { user_id: S1, mission_id: "car-01" },
+        { user_id: S3, mission_id: "car-01" },
+      ]);
+      expect(await rows("select id from public.profiles")).toEqual([]);
+      expect(await rows("select body from public.journal_entries")).toEqual([]);
+      expect(await rows("select user_id from public.user_stats")).toEqual([]);
+    });
+  });
+
+  it("a student who left is no longer visible", async () => {
+    await db.exec(`delete from public.batch_members where user_id = '${S3}'`);
+    await as("authenticated", TPO_A, async () => {
+      expect((await rows("select display_name from public.batch_members")).map((r) => r.display_name)).toEqual(["One A."]);
+      expect((await rows("select user_id from public.user_missions")).map((r) => r.user_id)).toEqual([S1]);
+    });
+  });
+
+  it("nobody but the server writes college tables, and invites are never readable", async () => {
+    await as("authenticated", TPO_A, async () => {
+      await expect(db.query(`insert into public.org_admins (org_id, user_id) values ('${ORG_B}', '${TPO_A}')`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`insert into public.batch_members (user_id, batch_id, display_name, consented_at) values ('${S2}', '${BATCH_A}', 'x', now())`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`insert into public.nudges (batch_id, user_id, local_date) values ('${BATCH_A}', '${S1}', current_date + 1)`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`update public.batches set grants_pass = true`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`select * from public.org_invites`)).rejects.toThrow(/permission denied/);
+    });
+    await as("authenticated", S1, async () => {
+      await expect(db.query(`delete from public.batch_members where user_id = '${S1}'`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`update public.batch_members set batch_id = '${BATCH_B}'`)).rejects.toThrow(/permission denied/);
+      expect(await rows("select display_name from public.batch_members")).toEqual([{ display_name: "One A." }]);
+      expect(await rows("select name from public.batches")).toEqual([]);
+      expect((await rows("select user_id from public.nudges")).map((r) => r.user_id)).toEqual([S1]);
+    });
+    await as("anon", null, async () => {
+      for (const table of ["orgs", "org_admins", "batches", "batch_members", "nudges", "org_invites"]) {
+        await expect(db.query(`select * from public.${table}`), table).rejects.toThrow(/permission denied/);
+      }
+    });
+  });
+});

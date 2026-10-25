@@ -4,7 +4,7 @@
 // XP, dates, status or limits. Times come from `now`, so tests and the founder's
 // time-travel switch can move the clock.
 import { z } from "zod";
-import { hasFullAccess, trialEndsAt, type Entitlement } from "@/lib/game/access";
+import { hasFullAccess, passCoversDate, trialEndsAt, type Entitlement } from "@/lib/game/access";
 import { addDays, isValidTimeZone, localDate, seasonPosition, type LocalDate } from "@/lib/game/dates";
 import {
   DAY_COMPLETE_BONUS,
@@ -39,7 +39,10 @@ export type ErrorCode =
   | "no_replacement"
   | "free_limit"
   | "season_finished"
-  | "already_has_pass";
+  | "already_has_pass"
+  | "already_member"
+  | "batch_closed"
+  | "not_allowed";
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: ErrorCode; message: string };
 
@@ -58,7 +61,7 @@ const idSchema = z.uuid();
 // No 0/O or 1/I, so codes are easy to read aloud.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function randomCode(length = 8): string {
+export function randomCode(length = 8): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 }
@@ -391,13 +394,7 @@ export function seasonStreak(profile: Profile, today: LocalDate, activeDays: Loc
     activeDays,
     today,
     seasonStart: profile.seasonStart,
-    hasShieldOn: (date) =>
-      entitlements.some(
-        (e) =>
-          e.kind === "season_pass" &&
-          localDate(e.startsAt, profile.timeZone) <= date &&
-          date < localDate(e.endsAt, profile.timeZone),
-      ),
+    hasShieldOn: passCoversDate(entitlements, profile.timeZone),
   });
 }
 
