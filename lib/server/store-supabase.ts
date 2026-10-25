@@ -6,13 +6,14 @@ import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
 import { isPackId, type PackId } from "@/lib/plan-engine/packs";
 import { addDays } from "@/lib/game/dates";
-import type { BatchMemberRow, BatchRow, Database, NudgeRow, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
+import type { BatchMemberRow, BatchRow, Database, NudgeRow, PaymentRow, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
 import type {
   Batch,
   BatchMember,
   DemoRequest,
   EventName,
+  Payment,
   MemberMission,
   ReviewOutcome,
   WeeklyReview,
@@ -104,6 +105,19 @@ function toMember(row: BatchMemberRow): BatchMember {
     displayName: row.display_name,
     section: row.section,
     joinedAt: new Date(row.joined_at),
+  };
+}
+
+function toPayment(row: PaymentRow): Payment {
+  return {
+    userId: row.user_id,
+    orderId: row.razorpay_order_id,
+    paymentId: row.razorpay_payment_id,
+    amountInr: row.amount_inr,
+    founderPrice: row.founder_price,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+    paidAt: row.paid_at ? new Date(row.paid_at) : null,
   };
 }
 
@@ -364,6 +378,66 @@ export class SupabaseSeasonStore implements SeasonStore {
     return count ?? 0;
   }
 
+  async countFounderPlaces() {
+    const [reserved, paid] = await Promise.all([
+      this.db.from("reservations").select("user_id").eq("founder_price", true),
+      this.db.from("payments").select("user_id").eq("founder_price", true).eq("status", "paid"),
+    ]);
+    if (reserved.error) fail("countFounderPlaces", reserved.error);
+    if (paid.error) fail("countFounderPlaces", paid.error);
+    return new Set([...(reserved.data ?? []), ...(paid.data ?? [])].map((r) => r.user_id)).size;
+  }
+
+  // --- Payments ---
+
+  async insertPayment(p: Pick<Payment, "userId" | "orderId" | "amountInr" | "founderPrice">) {
+    const { error } = await this.db.from("payments").insert({
+      user_id: p.userId,
+      razorpay_order_id: p.orderId,
+      amount_inr: p.amountInr,
+      founder_price: p.founderPrice,
+    });
+    if (error) fail("insertPayment", error);
+  }
+
+  async getPayment(orderId: string) {
+    const { data, error } = await this.db.from("payments").select("*").eq("razorpay_order_id", orderId).maybeSingle();
+    if (error) fail("getPayment", error);
+    return data ? toPayment(data) : null;
+  }
+
+  async markPaymentPaid(orderId: string, paymentId: string, at: Date) {
+    // One conditional update, so a webhook and a callback arriving together can't both win.
+    const { data, error } = await this.db
+      .from("payments")
+      .update({ status: "paid", razorpay_payment_id: paymentId, paid_at: at.toISOString() })
+      .eq("razorpay_order_id", orderId)
+      .neq("status", "paid")
+      .select("id")
+      .maybeSingle();
+    if (error) fail("markPaymentPaid", error);
+    return Boolean(data);
+  }
+
+  async markPaymentFailed(orderId: string) {
+    const { error } = await this.db
+      .from("payments")
+      .update({ status: "failed" })
+      .eq("razorpay_order_id", orderId)
+      .eq("status", "created");
+    if (error) fail("markPaymentFailed", error);
+  }
+
+  async listPayments(userId: string) {
+    const { data, error } = await this.db
+      .from("payments")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) fail("listPayments", error);
+    return (data ?? []).map(toPayment);
+  }
+
   async savePendingSettings(userId: string, settings: PendingSettings, from: string) {
     const { error } = await this.db
       .from("profiles")
@@ -420,7 +494,7 @@ export class SupabaseSeasonStore implements SeasonStore {
     const by = async (table: "profiles" | "user_stats", column: string) =>
       (await this.db.from(table).select("*").eq(column, userId)).data ?? [];
     const own = async (
-      table: "user_missions" | "xp_events" | "entitlements" | "weekly_reviews" | "journal_entries" | "reservations",
+      table: "user_missions" | "xp_events" | "entitlements" | "weekly_reviews" | "journal_entries" | "reservations" | "payments",
     ) => (await this.db.from(table).select("*").eq("user_id", userId)).data ?? [];
     const { data: login } = await this.db.auth.admin.getUserById(userId);
     const referrals =
@@ -436,6 +510,7 @@ export class SupabaseSeasonStore implements SeasonStore {
       weekly_reviews: await own("weekly_reviews"),
       journal: await own("journal_entries"),
       reservations: await own("reservations"),
+      payments: await own("payments"),
       referrals,
       events,
       batch_membership: (await this.db.from("batch_members").select("*").eq("user_id", userId)).data ?? [],

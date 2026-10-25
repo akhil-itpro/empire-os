@@ -24,6 +24,9 @@ export type EventName =
   | "referral_reward"
   | "weekly_review_done"
   | "demo_request"
+  | "checkout_start"
+  | "payment_done"
+  | "payment_failed"
   // Browser events, logged by the server only in local test mode (see app/api/test-event).
   | ClientEvent;
 
@@ -120,6 +123,18 @@ export type WeeklyReview = {
   focusPillar: Pillar;
   outcome: ReviewOutcome;
   createdAt: Date;
+};
+
+/** One Razorpay order for Season Pass, with the price the server computed. */
+export type Payment = {
+  userId: string;
+  orderId: string;
+  paymentId: string | null;
+  amountInr: number;
+  founderPrice: boolean;
+  status: "created" | "paid" | "failed";
+  createdAt: Date;
+  paidAt: Date | null;
 };
 
 /** "Book a 20-minute demo" from /colleges: work contact details a TPO sends us. */
@@ -221,6 +236,17 @@ export interface SeasonStore {
   insertReservation(userId: string, priceInr: number, founderPrice: boolean): Promise<"created" | "exists">;
   /** Reservations at the founder price, counted toward the first 500. */
   countFounderReservations(): Promise<number>;
+  /** Founder places taken: students with a founder-price reservation or a paid founder-price pass. */
+  countFounderPlaces(): Promise<number>;
+
+  // --- Payments (Razorpay). Only the server writes; students read their own. ---
+  insertPayment(p: Pick<Payment, "userId" | "orderId" | "amountInr" | "founderPrice">): Promise<void>;
+  getPayment(orderId: string): Promise<Payment | null>;
+  /** Marks an order paid, once. True only for the call that changed it. */
+  markPaymentPaid(orderId: string, paymentId: string, at: Date): Promise<boolean>;
+  /** Marks an order failed, unless it was already paid. */
+  markPaymentFailed(orderId: string): Promise<void>;
+  listPayments(userId: string): Promise<Payment[]>;
 
   /** True if the user has the founder role (written only by the server). */
   isFounder(userId: string): Promise<boolean>;

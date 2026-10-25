@@ -79,7 +79,9 @@ async function MeContent() {
         </p>
         {me.reservedAt !== null && me.access.kind !== "pass" && me.access.kind !== "batch" ? (
           <p className="mt-2 text-sm text-bone">
-            You reserved Season Pass at ₹{me.reservedAt}. No payment taken. We&apos;ll tell you in the app when it opens.
+            {me.paymentsLive
+              ? `Season Pass is open. Your reserved price of ₹${me.reservedAt} is held for you.`
+              : `You reserved Season Pass at ₹${me.reservedAt}. No payment taken. We'll tell you in the app when it opens.`}
           </p>
         ) : null}
         {me.access.kind !== "pass" && me.access.kind !== "batch" ? (
@@ -91,6 +93,24 @@ async function MeContent() {
           </Link>
         ) : null}
       </section>
+
+      {me.receipts.length > 0 ? (
+        <section className="mt-6" aria-labelledby="receipts">
+          <h2 id="receipts" className="text-sm font-bold">
+            Receipts
+          </h2>
+          <ul className="mt-2 flex flex-col gap-2">
+            {me.receipts.map((r) => (
+              <li key={r.orderId} className="rounded-xl border border-rule px-4 py-3 text-sm">
+                <p className="font-semibold">Season Pass, 90 days: ₹{r.amountInr}</p>
+                <p className="mt-0.5 text-moss">
+                  Paid {fmt(r.paidOn)}. One-time, no auto-renewal. Payment ID {r.paymentId}, order ID {r.orderId}.
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mt-8" aria-labelledby="journal">
         <h2 id="journal" className="font-display text-[26px] leading-none font-extrabold">

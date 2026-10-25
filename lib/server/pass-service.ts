@@ -3,9 +3,10 @@
 // always comes from the server's own count, never from the browser.
 import { fullAccessUntil, hasSeasonPass, isPassLike } from "@/lib/game/access";
 import { localDate, seasonPosition, type LocalDate } from "@/lib/game/dates";
-import { passOffer, PAYMENTS_LIVE, paywallSource, type PassOffer } from "@/lib/game/pass";
+import { paywallSource, type PassOffer } from "@/lib/game/pass";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 import type { Archetype } from "@/lib/plan-engine/missions";
+import { priceFor } from "./payment-service";
 import type { Deps, Result } from "./season-service";
 
 export type PassData = {
@@ -14,7 +15,8 @@ export type PassData = {
   archetypeName: string;
   day: number;
   seasonNumber: number;
-  offer: PassOffer;
+  /** The price for this student; `reserved` when they keep a founder price they reserved. */
+  offer: PassOffer & { reserved: boolean };
   paymentsLive: boolean;
   /** The last day of an active Season Pass, or null. */
   passUntil: LocalDate | null;
@@ -29,10 +31,10 @@ export async function loadPass(deps: Deps, userId: string): Promise<Result<PassD
   const { store, now } = deps;
   const profile = await store.getProfile(userId);
   if (!profile) return NOT_STARTED;
-  const [entitlements, reservation, founderTaken] = await Promise.all([
+  const [entitlements, reservation, offer] = await Promise.all([
     store.entitlements(userId),
     store.getReservation(userId),
-    store.countFounderReservations(),
+    priceFor(store, userId),
   ]);
   const tz = profile.timeZone;
   const pass = entitlements
@@ -47,8 +49,8 @@ export async function loadPass(deps: Deps, userId: string): Promise<Result<PassD
       archetypeName: ARCHETYPE_INFO[profile.archetype].name,
       day: seasonPosition(profile.seasonStart, localDate(now, tz)).day,
       seasonNumber: profile.seasonNumber,
-      offer: passOffer(founderTaken),
-      paymentsLive: PAYMENTS_LIVE,
+      offer,
+      paymentsLive: Boolean(deps.payments),
       passUntil: pass && hasSeasonPass(now, entitlements) ? localDate(new Date(pass.endsAt.getTime() - 1), tz) : null,
       accessUntil: until ? localDate(new Date(until.getTime() - 1), tz) : null,
       reservation: reservation ? { priceInr: reservation.priceInr, founderPrice: reservation.founderPrice } : null,
@@ -66,7 +68,7 @@ export async function reservePass(
   source: unknown,
 ): Promise<Result<{ priceInr: number; founderPrice: boolean; created: boolean }>> {
   const { store, now } = deps;
-  if (PAYMENTS_LIVE) {
+  if (deps.payments) {
     return { ok: false, error: "invalid_input", message: "Reservations are closed. Season Pass is open now." };
   }
   const profile = await store.getProfile(userId);
@@ -75,7 +77,7 @@ export async function reservePass(
     return { ok: false, error: "already_has_pass", message: "You already have Season Pass." };
   }
 
-  const offer = passOffer(await store.countFounderReservations());
+  const offer = await priceFor(store, userId);
   const outcome = await store.insertReservation(userId, offer.priceInr, offer.founderPrice);
   const saved = (await store.getReservation(userId))!;
   await store.logEvent("reserve_click", userId, {

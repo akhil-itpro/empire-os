@@ -41,8 +41,9 @@ export default function TermsPage() {
           <li>After that, Free stays free with one mission a day in the pillar you pick. XP and ranks keep working.</li>
           <li>Season Pass gives three missions a day and the full season for 90 days, for ₹499 as a one-time payment. The first 500 buyers pay ₹299.</li>
           <li>There is no auto-renewal and no hidden charge. A new season is a new purchase. The full price is shown before you pay.</li>
-          <li>Payments are not open yet. Reserving the founder price takes no money.</li>
-          <li>Refunds: [REFUND POLICY].</li>
+          <li>Until payments open, reserving the founder price takes no money. If you reserved it, ₹299 is held for you when they open.</li>
+          <li>Payments go through Razorpay by UPI or card. We never see your card or UPI details. Season Pass starts when the payment is confirmed.</li>
+          <li id="refunds" className="scroll-mt-6">Refunds: [REFUND POLICY].</li>
         </ul>
       </section>
 

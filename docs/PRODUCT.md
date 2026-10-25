@@ -141,7 +141,7 @@ Visible only to users with the founder role (a roles table only the server write
 
 **Tables** (all personal tables have RLS, owner-only reads):
 
-- `profiles`, `user_missions`, `user_stats`, `entitlements`, `weekly_reviews`, `journal_entries`, `reservations`, `referrals`
+- `profiles`, `user_missions`, `user_stats`, `entitlements`, `weekly_reviews`, `journal_entries`, `reservations`, `referrals`, `payments` (Razorpay order and payment IDs, amount, status; never card or UPI details)
 - `mission_library`, `packs` (readable by all signed-in users, written only by server or migrations)
 - `orgs`, `org_admins`, `batches`, `batch_members` (TPO reads only consenting members of their own org), `org_invites` (server only), `nudges` (the student and their college read)
 - `roles` (founder), `events` (insert only from the browser; founder reads), `launch_checklist`

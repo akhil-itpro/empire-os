@@ -221,6 +221,18 @@ export type DemoRequestRow = {
   created_at: string;
 };
 
+export type PaymentRow = {
+  id: string;
+  user_id: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string | null;
+  amount_inr: number;
+  founder_price: boolean;
+  status: "created" | "paid" | "failed";
+  created_at: string;
+  paid_at: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -245,6 +257,7 @@ export type Database = {
       batch_members: Table<BatchMemberRow, "section" | "joined_at">;
       nudges: Table<NudgeRow, "id" | "sent_by" | "seen_at" | "created_at">;
       demo_requests: Table<DemoRequestRow, "id" | "phone" | "note" | "handled" | "created_at">;
+      payments: Table<PaymentRow, "id" | "razorpay_payment_id" | "status" | "created_at" | "paid_at">;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

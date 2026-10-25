@@ -91,9 +91,10 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
       </header>
       <p className="mt-2 text-sm text-moss">Read-only. Dates in India time. Only the founder role can open this page.</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatTile label="Sign-ups" value={nf.format(totalSignups)} unit={`last ${range} days`} />
         <StatTile label="Reservations" value={nf.format(m.reservations.total)} unit={`${nf.format(m.reservations.founderPrice)} at founder price`} />
+        <StatTile label="Season Passes sold" value={nf.format(m.passesSold)} unit={`last ${range} days`} />
         <StatTile label="Share cards made" value={nf.format(m.shareCards)} />
         <StatTile label="Referral sign-ups" value={nf.format(m.referralSignups)} />
       </div>

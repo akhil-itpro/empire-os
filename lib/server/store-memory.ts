@@ -9,6 +9,7 @@ import type {
   BatchMember,
   DemoRequest,
   EventName,
+  Payment,
   Nudge,
   Org,
   ReviewOutcome,
@@ -216,6 +217,41 @@ export class MemoryStore implements SeasonStore {
     return this.reservations.filter((r) => r.founderPrice).length;
   }
 
+  async countFounderPlaces() {
+    const users = new Set(this.reservations.filter((r) => r.founderPrice).map((r) => r.userId));
+    for (const p of this.payments) if (p.status === "paid" && p.founderPrice) users.add(p.userId);
+    return users.size;
+  }
+
+  // --- Payments ---
+
+  payments: Payment[] = [];
+
+  async insertPayment(p: Pick<Payment, "userId" | "orderId" | "amountInr" | "founderPrice">) {
+    this.payments.push({ ...p, paymentId: null, status: "created", createdAt: new Date(), paidAt: null });
+  }
+
+  async getPayment(orderId: string) {
+    const p = this.payments.find((x) => x.orderId === orderId);
+    return p ? { ...p } : null;
+  }
+
+  async markPaymentPaid(orderId: string, paymentId: string, at: Date) {
+    const p = this.payments.find((x) => x.orderId === orderId && x.status !== "paid");
+    if (!p) return false;
+    Object.assign(p, { status: "paid", paymentId, paidAt: at });
+    return true;
+  }
+
+  async markPaymentFailed(orderId: string) {
+    const p = this.payments.find((x) => x.orderId === orderId && x.status === "created");
+    if (p) p.status = "failed";
+  }
+
+  async listPayments(userId: string) {
+    return this.payments.filter((p) => p.userId === userId).map((p) => ({ ...p }));
+  }
+
   async isFounder(userId: string) {
     return this.founders.has(userId);
   }
@@ -261,6 +297,7 @@ export class MemoryStore implements SeasonStore {
       referrals: this.referrals.filter((r) => r.referrerId === userId || r.referredId === userId),
       events: this.events.filter((e) => e.userId === userId),
       weekly_reviews: this.reviews.filter((r) => r.userId === userId),
+      payments: this.payments.filter((p) => p.userId === userId),
       batch_membership: this.members.filter((m) => m.userId === userId),
       nudges: this.nudges.filter((n) => n.userId === userId).map(nudgeOut),
     };
@@ -278,6 +315,7 @@ export class MemoryStore implements SeasonStore {
     this.referrals = this.referrals.filter((r) => r.referrerId !== userId && r.referredId !== userId);
     this.members = this.members.filter((m) => m.userId !== userId);
     this.reviews = this.reviews.filter((r) => r.userId !== userId);
+    this.payments = this.payments.filter((p) => p.userId !== userId);
     this.nudges = this.nudges.filter((n) => n.userId !== userId);
     this.orgAdmins = this.orgAdmins.filter((a) => a.userId !== userId);
     // Events stay, but no longer linked to anyone (like the database's "on delete set null").

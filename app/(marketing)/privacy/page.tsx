@@ -29,6 +29,7 @@ export default function PrivacyPage() {
           <li>Your time zone, so a &ldquo;day&rdquo; matches your clock.</li>
           <li>If you join a college batch: that you joined, when you agreed to share progress, your section (if your college uses sections), the name your college sees (your first name and, if you add it, the initial of your last name), and any in-app reminders your college sent you.</li>
           <li>If you reserve a Season Pass: the price shown when you reserved. No payment is taken.</li>
+          <li>If you buy a Season Pass: the amount, the date, and Razorpay&apos;s order and payment IDs, for your receipt and to confirm the payment. Razorpay handles your card or UPI details; we never see them.</li>
           <li>If you were invited with a referral link: who invited you.</li>
           <li>Simple usage events, such as &ldquo;finished the quiz&rdquo; or &ldquo;opened the paywall&rdquo;, stored in our own database with a random ID kept in your browser. They never contain your answers or journal.</li>
         </ul>

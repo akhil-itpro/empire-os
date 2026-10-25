@@ -146,12 +146,12 @@ Done when: the live site shares nicely on WhatsApp and scores 90+ on mobile.
 Read: `docs/PRODUCT.md` section 2. Gate: Day-7 return at 15% or more and real reservations.
 
 - [ ] Founder adds Razorpay key id, key secret and webhook secret to Vercel and `.env.local`
-- [ ] Server creates the Razorpay order with the price computed from the live founder count
-- [ ] Checkout opens with the order id; server verifies the payment signature and that the payment is captured and the order paid before granting the pass
-- [ ] Webhooks `payment.captured`, `payment.failed`, `order.paid` verified with the webhook secret; granting is idempotent
-- [ ] Callback URL flow so checkout works inside Instagram's in-app browser
-- [ ] Before paying: exact amount, "one-time, no auto-renewal", links to Terms and refund policy
-- [ ] Reservation holders told in the app; receipt in Me
-- [ ] Test mode: success, failure, closed checkout, repeated webhook, Instagram browser
+- [x] Server creates the Razorpay order with the price computed from the live founder count (verified with the test-mode stand-in for Razorpay; reservation holders keep ₹299)
+- [x] Checkout opens with the order id; server verifies the payment signature and that the payment is captured and the order paid before granting the pass (verified with the stand-in; recheck with Razorpay test keys)
+- [x] Webhooks `payment.captured`, `payment.failed`, `order.paid` verified with the webhook secret; granting is idempotent (unit tests and the stand-in; recheck with Razorpay test keys)
+- [ ] Callback URL flow so checkout works inside Instagram's in-app browser (built: `/api/payments/callback`, used automatically in Instagram and Facebook browsers; unit-tested; try it in Instagram after deploy)
+- [x] Before paying: exact amount, "one-time, no auto-renewal", links to Terms and refund policy (refund policy text is still [REFUND POLICY])
+- [x] Reservation holders told in the app; receipt in Me (verified in local test mode)
+- [ ] Test mode: success, failure, closed checkout, repeated webhook, Instagram browser (the first four pass against the stand-in in `tests/e2e/payments.spec.ts`; repeat with Razorpay test keys, plus Instagram)
 
 Done when: only a server-verified payment unlocks the pass, and replays never grant twice.

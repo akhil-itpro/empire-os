@@ -285,3 +285,36 @@ describe("College HQ", () => {
     });
   });
 });
+
+describe("payments", () => {
+  const P = "00000000-0000-4000-8000-0000000000f1";
+  const Q = "00000000-0000-4000-8000-0000000000f2";
+
+  beforeAll(async () => {
+    await db.exec(`
+      insert into auth.users (id) values ('${P}'), ('${Q}');
+      ${profileSql(P, "PAYPAY")}; ${profileSql(Q, "PAYQQQ")};
+      insert into public.payments (user_id, razorpay_order_id, amount_inr, founder_price)
+        values ('${P}', 'order_PPPPPPPP', 299, true), ('${Q}', 'order_QQQQQQQQ', 299, true);
+    `);
+  });
+
+  it("students read only their own orders and can't mark them paid or grant passes", async () => {
+    await as("authenticated", P, async () => {
+      expect(await rows("select razorpay_order_id from public.payments")).toEqual([{ razorpay_order_id: "order_PPPPPPPP" }]);
+      await expect(db.query(`update public.payments set status = 'paid', razorpay_payment_id = 'pay_FAKEFAKE', paid_at = now()`)).rejects.toThrow(/permission denied/);
+      await expect(db.query(`insert into public.payments (user_id, razorpay_order_id, amount_inr, founder_price) values ('${P}', 'order_MINEMINE', 1, true)`)).rejects.toThrow(/permission denied/);
+    });
+    await as("anon", null, async () => {
+      await expect(db.query(`select * from public.payments`)).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it("a paid order needs a payment id and a time, and a payment id is used once", async () => {
+    await expect(db.query(`update public.payments set status = 'paid' where user_id = '${P}'`)).rejects.toThrow(/check constraint/);
+    await db.query(`update public.payments set status = 'paid', razorpay_payment_id = 'pay_ONCEONCE', paid_at = now() where user_id = '${P}'`);
+    await expect(
+      db.query(`update public.payments set status = 'paid', razorpay_payment_id = 'pay_ONCEONCE', paid_at = now() where user_id = '${Q}'`),
+    ).rejects.toThrow(/duplicate key/);
+  });
+});

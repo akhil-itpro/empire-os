@@ -24,6 +24,8 @@ async function PassContent({ searchParams }: { searchParams: PageProps<"/pass">[
   if (!userId) redirect("/login");
   const result = await loadPass(await depsFor(userId), userId);
   if (!result.ok) redirect("/quiz");
-  const source = paywallSource((await searchParams).from);
-  return <PassView data={result.data} source={source} />;
+  const q = await searchParams;
+  const source = paywallSource(q.from);
+  const notice = q.paid === "1" ? "paid" : q.payment === "failed" ? "failed" : null;
+  return <PassView data={result.data} source={source} notice={notice} />;
 }

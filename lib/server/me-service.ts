@@ -3,6 +3,7 @@ import { fullAccessUntil, hasSeasonPass } from "@/lib/game/access";
 import { addDays, localDate, seasonPosition } from "@/lib/game/dates";
 import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
 import { ARCHETYPE_INFO, archetypeFor } from "@/lib/plan-engine/archetype";
+import { receipts, type Receipt } from "./payment-service";
 import type { Deps, Result } from "./season-service";
 import type { PendingSettings, ShareName } from "./store";
 
@@ -44,6 +45,10 @@ export type MeData = {
   isFounder: boolean;
   shareName: ShareName;
   referralCode: string;
+  /** True once Season Pass payments are open. */
+  paymentsLive: boolean;
+  /** Paid Season Passes, newest first. */
+  receipts: Receipt[];
 };
 
 function editable(source: Answers | PendingSettings): EditableSettings {
@@ -85,7 +90,10 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
         ? { kind: deps.now < profile.trialEndsAt ? "trial" : "bonus", until: lastDay(until) }
         : { kind: "free" };
 
-  const journal = await deps.store.listJournal(userId, addDays(today, -6), today);
+  const [journal, paid] = await Promise.all([
+    deps.store.listJournal(userId, addDays(today, -6), today),
+    receipts(deps.store, userId, profile.timeZone),
+  ]);
 
   return {
     ok: true,
@@ -106,6 +114,8 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
       isFounder,
       shareName: profile.shareName,
       referralCode: profile.referralCode,
+      paymentsLive: Boolean(deps.payments),
+      receipts: paid,
     },
   };
 }

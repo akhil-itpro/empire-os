@@ -4,6 +4,7 @@ import { Check, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { reservePass } from "@/app/actions/growth";
+import { Checkout } from "./Checkout";
 import { TrackOnMount } from "@/components/TrackOnMount";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Emblem } from "@/components/ui/Emblem";
@@ -34,7 +35,16 @@ const BACK: Record<PaywallSource, { href: string; label: string }> = {
   direct: { href: "/hq", label: "Back to HQ" },
 };
 
-export function PassView({ data, source }: { data: PassData; source: PaywallSource }) {
+export function PassView({
+  data,
+  source,
+  notice,
+}: {
+  data: PassData;
+  source: PaywallSource;
+  /** After Razorpay's redirect flow: "paid" or "failed". */
+  notice?: "paid" | "failed" | null;
+}) {
   const [pending, startTransition] = useTransition();
   const [reserved, setReserved] = useState(data.reservation);
   const [problem, setProblem] = useState<string | null>(null);
@@ -64,7 +74,9 @@ export function PassView({ data, source }: { data: PassData; source: PaywallSour
 
       {data.passUntil ? (
         <>
-          <h1 className="mt-3 font-display text-[42px] leading-[0.98] font-extrabold">You have Season Pass.</h1>
+          <h1 className="mt-3 font-display text-[42px] leading-[0.98] font-extrabold">
+            {notice === "paid" ? "Payment received. Season Pass is on." : "You have Season Pass."}
+          </h1>
           <p className="mt-2.5 text-[15px] text-moss">
             Active until {fmt(data.passUntil)}. Three missions a day and the full campaign.
           </p>
@@ -123,9 +135,9 @@ export function PassView({ data, source }: { data: PassData; source: PaywallSour
               </div>
               {offer.founderPrice ? (
                 <p className="mt-2.5 text-[13px] text-moss">
-                  Founder price for the first {nf.format(offer.founderPlaces)} members, then ₹
-                  {nf.format(offer.regularPriceInr)}. {nf.format(offer.founderTaken)} of{" "}
-                  {nf.format(offer.founderPlaces)} reserved so far.
+                  {offer.reserved && data.paymentsLive
+                    ? "Your reserved founder price, held for you."
+                    : `Founder price for the first ${nf.format(offer.founderPlaces)} members, then ₹${nf.format(offer.regularPriceInr)}. ${nf.format(offer.founderTaken)} of ${nf.format(offer.founderPlaces)} ${data.paymentsLive ? "taken" : "reserved"} so far.`}
                 </p>
               ) : null}
             </div>
@@ -133,7 +145,15 @@ export function PassView({ data, source }: { data: PassData; source: PaywallSour
 
           <div className="flex-1" />
 
-          {reserved ? (
+          {notice === "failed" ? (
+            <p role="status" className="mt-5 text-center text-sm text-bone">
+              The payment didn&apos;t go through. You haven&apos;t been charged. Try again or use another method.
+            </p>
+          ) : null}
+
+          {data.paymentsLive ? (
+            <Checkout priceInr={offer.priceInr} backHref={back.href} />
+          ) : reserved ? (
             <>
               <p role="status" className="mt-5 rounded-xl border-[1.5px] border-brass px-4 py-3.5 text-[15px] font-semibold">
                 Reserved at ₹{nf.format(reserved.priceInr)}. No payment taken. We&apos;ll tell you in the app when
@@ -157,14 +177,16 @@ export function PassView({ data, source }: { data: PassData; source: PaywallSour
             </>
           )}
 
-          <p className="mt-2.5 text-center text-xs text-moss">
-            No payment is taken now. When Season Pass opens it&apos;s a one-time payment by UPI or card, with no
-            auto-renewal. See the{" "}
-            <Link href="/terms" className="font-semibold text-brass hov:text-brass-light">
-              Terms
-            </Link>
-            .
-          </p>
+          {data.paymentsLive ? null : (
+            <p className="mt-2.5 text-center text-xs text-moss">
+              No payment is taken now. When Season Pass opens it&apos;s a one-time payment by UPI or card, with no
+              auto-renewal. See the{" "}
+              <Link href="/terms" className="font-semibold text-brass hov:text-brass-light">
+                Terms
+              </Link>
+              .
+            </p>
+          )}
         </>
       )}
     </main>

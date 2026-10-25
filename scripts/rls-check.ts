@@ -110,7 +110,13 @@ async function studentChecks(me: { id: string; client: SupabaseClient }, other: 
   await expectDenied(`${label} can't grant themselves a referral bonus`, () =>
     c.from("entitlements").insert({ user_id: me.id, kind: "referral_bonus", starts_at: new Date().toISOString(), ends_at: new Date(Date.now() + 6e8).toISOString(), source: "referral-reward:1" }).select(),
   );
-  await expectDenied(`${label} can't change the other student's profile`, () => c.from("profiles").update({ first_name: "Hacked" }).eq("id", other.id).select());
+  await expectDenied(`${label} can't record a payment for themselves`, () =>
+    c.from("payments").insert({ user_id: me.id, razorpay_order_id: `order_HACK${label.slice(-1)}1234`, amount_inr: 1, founder_price: true }).select(),
+  );
+  await expectDenied(`${label} can't mark their own order paid`, () =>
+    c.from("payments").update({ status: "paid" }).eq("user_id", me.id).select(),
+  );
+  await expectDenied(`${label} can't change the other student's profile`,() => c.from("profiles").update({ first_name: "Hacked" }).eq("id", other.id).select());
   await expectDenied(`${label} can't delete the other student's missions`, () => c.from("user_missions").delete().eq("user_id", other.id).select());
   await expectDenied(`${label} can't log events as the other student`, () => c.from("events").insert({ name: "quiz_start", user_id: other.id }));
   const own = await c.from("events").insert({ name: "quiz_start", user_id: me.id });

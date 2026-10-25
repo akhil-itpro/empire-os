@@ -26,9 +26,16 @@ import type { Mission } from "@/lib/plan-engine/missions";
 import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
 import { effectiveMinutes, selectDailyMissions, type PlanSettings, type WeekAdjustments } from "@/lib/plan-engine/select";
 import { linkReferral, rewardReferral } from "./referral-service";
+import type { PaymentGateway } from "./payment-service";
 import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
 
-export type Deps = { store: SeasonStore; now: Date; library?: Mission[] };
+export type Deps = {
+  store: SeasonStore;
+  now: Date;
+  library?: Mission[];
+  /** Razorpay when payments are live (Phase 10); null or missing in reserve mode. */
+  payments?: PaymentGateway | null;
+};
 
 export type ErrorCode =
   | "invalid_input"

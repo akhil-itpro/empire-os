@@ -1,4 +1,5 @@
 import "server-only";
+import { FakeGateway } from "./payments-fake";
 import { MemoryStore } from "./store-memory";
 
 /**
@@ -11,11 +12,21 @@ export const TEST_MODE = process.env.NODE_ENV !== "production" && process.env.EM
 
 export const TEST_USER_COOKIE = "empire_test_user";
 
-const globalForTest = globalThis as unknown as { empireTestStore?: MemoryStore };
+/** In test mode, a browser with this cookie sees live payments through a stand-in Razorpay. */
+export const TEST_PAYMENTS_COOKIE = "empire_test_payments";
+
+const globalForTest = globalThis as unknown as { empireTestStore?: MemoryStore; empireTestGateway?: FakeGateway };
 
 /** One shared in-memory store for the dev server process. */
 export function testStore(): MemoryStore {
   if (!TEST_MODE) throw new Error("testStore() is only available in local test mode.");
   globalForTest.empireTestStore ??= new MemoryStore();
   return globalForTest.empireTestStore;
+}
+
+/** One shared stand-in Razorpay for the dev server process (test mode only). */
+export function testGateway(): FakeGateway {
+  if (!TEST_MODE) throw new Error("testGateway() is only available in local test mode.");
+  globalForTest.empireTestGateway ??= new FakeGateway();
+  return globalForTest.empireTestGateway;
 }

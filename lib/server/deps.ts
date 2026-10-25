@@ -1,10 +1,12 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { PaymentGateway } from "./payment-service";
+import { razorpayFromEnv } from "./razorpay";
 import type { Deps } from "./season-service";
 import type { SeasonStore } from "./store";
 import { SupabaseSeasonStore } from "./store-supabase";
-import { TEST_MODE, testStore } from "./test-mode";
+import { TEST_MODE, TEST_PAYMENTS_COOKIE, testGateway, testStore } from "./test-mode";
 
 export const TIME_TRAVEL_COOKIE = "empire_time_travel";
 export const MAX_TIME_TRAVEL_DAYS = 120;
@@ -25,8 +27,14 @@ export async function timeTravelDays(store: SeasonStore, userId: string): Promis
   return (await store.isFounder(userId)) ? raw : 0;
 }
 
+/** Razorpay when payments are live; in local test mode, a stand-in when the test asks for it. */
+export async function paymentGateway(): Promise<PaymentGateway | null> {
+  if (TEST_MODE) return (await cookies()).get(TEST_PAYMENTS_COOKIE)?.value === "1" ? testGateway() : null;
+  return razorpayFromEnv();
+}
+
 export async function depsFor(userId: string): Promise<Deps> {
   const store = storeForRequest();
   const days = await timeTravelDays(store, userId);
-  return { store, now: new Date(Date.now() + days * 86_400_000) };
+  return { store, now: new Date(Date.now() + days * 86_400_000), payments: await paymentGateway() };
 }
