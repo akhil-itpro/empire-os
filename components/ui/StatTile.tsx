@@ -16,10 +16,12 @@ type StatTileProps = {
   /** Small text after the value, e.g. "of 264". */
   unit?: ReactNode;
   delta?: Delta;
+  /** A plain line under the value when there's no delta, e.g. where the number comes from. */
+  note?: ReactNode;
   className?: string;
 };
 
-export function StatTile({ label, value, unit, delta, className }: StatTileProps) {
+export function StatTile({ label, value, unit, delta, note, className }: StatTileProps) {
   const Arrow = delta?.direction === "down" ? ArrowDown : ArrowUp;
   return (
     <div
@@ -45,6 +47,8 @@ export function StatTile({ label, value, unit, delta, className }: StatTileProps
           <Arrow size={14} strokeWidth={2.5} aria-hidden="true" />
           <span>{delta.text}</span>
         </div>
+      ) : note ? (
+        <div className="mt-2 text-[13px] text-moss">{note}</div>
       ) : null}
     </div>
   );

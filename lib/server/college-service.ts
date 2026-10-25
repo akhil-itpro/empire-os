@@ -347,6 +347,21 @@ export async function previewJoin(deps: Deps, userId: string, rawCode: unknown):
   };
 }
 
+/** What a /join/CODE link shows before sign-in: the college and batch names only. */
+export async function publicBatchInvite(store: SeasonStore, rawCode: unknown, now: Date) {
+  const code = normaliseCode(rawCode);
+  if (!code) return null;
+  const batch = await store.findBatchByCode(code);
+  const org = batch ? await store.getOrg(batch.orgId) : null;
+  if (!batch || !org) return null;
+  return {
+    code,
+    orgName: org.name,
+    batchName: batch.name,
+    open: !batch.isSample && localDate(now, COLLEGE_TZ) <= batch.endsOn,
+  };
+}
+
 const joinSchema = z.object({
   code: z.string(),
   section: z.string().max(30).nullable(),

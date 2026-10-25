@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { studentNudge } from "@/lib/server/college-service";
 import { depsFor } from "@/lib/server/deps";
 import { loadHq } from "@/lib/server/hq";
 import { getSessionUserId } from "@/lib/server/session";
 import { HqView } from "./HqView";
+import { NudgeBanner } from "./NudgeBanner";
 
 export const metadata: Metadata = { title: "HQ", robots: { index: false } };
 
@@ -22,10 +24,17 @@ async function HqContent({ searchParams }: { searchParams: PageProps<"/hq">["sea
   await connection();
   const userId = await getSessionUserId();
   if (!userId) redirect("/login");
-  const result = await loadHq(await depsFor(userId), userId);
+  const deps = await depsFor(userId);
+  const result = await loadHq(deps, userId);
   if (!result.ok) redirect(result.error === "not_started" ? "/quiz" : "/login");
   const first = (await searchParams).first === "1";
-  return <HqView data={result.data} first={first} />;
+  const nudge = await studentNudge(deps, userId);
+  return (
+    <>
+      {nudge ? <NudgeBanner id={nudge.id} orgName={nudge.orgName} /> : null}
+      <HqView data={result.data} first={first} />
+    </>
+  );
 }
 
 function HqSkeleton() {

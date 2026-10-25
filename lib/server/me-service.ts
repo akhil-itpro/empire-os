@@ -24,6 +24,8 @@ export type Access =
   /** Full access from a referral reward after the trial. */
   | { kind: "bonus"; until: string }
   | { kind: "pass"; until: string }
+  /** Season Pass access from a paid college batch. */
+  | { kind: "batch"; until: string }
   | { kind: "free" };
 
 export type MeData = {
@@ -64,9 +66,12 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
     deps.store.entitlements(userId),
     deps.store.getReservation(userId),
   ]);
-  const pass = entitlements
-    .filter((e) => e.kind === "season_pass" && e.startsAt <= deps.now && deps.now < e.endsAt)
-    .sort((a, b) => b.endsAt.getTime() - a.endsAt.getTime())[0];
+  const current = (kind: "season_pass" | "batch") =>
+    entitlements
+      .filter((e) => e.kind === kind && e.startsAt <= deps.now && deps.now < e.endsAt)
+      .sort((a, b) => b.endsAt.getTime() - a.endsAt.getTime())[0];
+  const pass = current("season_pass");
+  const batch = current("batch");
 
   // The last day covered: an end at midnight belongs to the day before.
   const lastDay = (end: Date) => localDate(new Date(end.getTime() - 1), profile.timeZone);
@@ -74,7 +79,9 @@ export async function loadMe(deps: Deps, userId: string, isFounder: boolean): Pr
   const access: Access =
     pass && hasSeasonPass(deps.now, entitlements)
       ? { kind: "pass", until: lastDay(pass.endsAt) }
-      : until
+      : batch
+        ? { kind: "batch", until: lastDay(batch.endsAt) }
+        : until
         ? { kind: deps.now < profile.trialEndsAt ? "trial" : "bonus", until: lastDay(until) }
         : { kind: "free" };
 

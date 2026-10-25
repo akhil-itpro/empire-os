@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           <li>Your mission activity: which missions you were given, finished, skipped (with the reason you picked) or swapped, and when. XP, streaks and rank are worked out from this.</li>
           <li>An optional one-line private journal, if you write one.</li>
           <li>Your time zone, so a &ldquo;day&rdquo; matches your clock.</li>
-          <li>If you join a college batch: that you joined and that you agreed to share progress.</li>
+          <li>If you join a college batch: that you joined, when you agreed to share progress, your section (if your college uses sections), the name your college sees (your first name and, if you add it, the initial of your last name), and any in-app reminders your college sent you.</li>
           <li>If you reserve a Season Pass: the price shown when you reserved. No payment is taken.</li>
           <li>If you were invited with a referral link: who invited you.</li>
           <li>Simple usage events, such as &ldquo;finished the quiz&rdquo; or &ldquo;opened the paywall&rdquo;, stored in our own database with a random ID kept in your browser. They never contain your answers or journal.</li>

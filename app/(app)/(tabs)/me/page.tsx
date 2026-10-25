@@ -7,11 +7,13 @@ import { Suspense } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { depsFor, storeForRequest, TIME_TRAVEL_COOKIE } from "@/lib/server/deps";
+import { loadMembership } from "@/lib/server/college-service";
 import { loadMe } from "@/lib/server/me-service";
 import { getSessionUserId } from "@/lib/server/session";
 import { loadReferrals } from "@/lib/server/referral-service";
 import { shareOptions } from "@/lib/server/share-service";
 import { TEST_MODE } from "@/lib/server/test-mode";
+import { CollegeSeason } from "./CollegeSeason";
 import { FounderTools } from "./FounderTools";
 import { InviteFriends } from "./InviteFriends";
 import { JournalForm } from "./JournalForm";
@@ -38,10 +40,11 @@ async function MeContent() {
   // Founder tools show only for the founder role (or in local test mode), checked on the server.
   const founder = TEST_MODE || (await storeForRequest().isFounder(userId));
   const deps = await depsFor(userId);
-  const [result, cards, referrals] = await Promise.all([
+  const [result, cards, referrals, membership] = await Promise.all([
     loadMe(deps, userId, founder),
     shareOptions(deps, userId),
     loadReferrals(deps, userId),
+    loadMembership(deps, userId),
   ]);
   if (!result.ok) redirect("/quiz");
   const me = result.data;
@@ -59,25 +62,27 @@ async function MeContent() {
         <h2 id="access" className="text-sm font-bold">
           {me.access.kind === "pass"
             ? "Season Pass"
-            : me.access.kind === "trial"
+            : me.access.kind === "batch"
+              ? "Season Pass from your college"
+              : me.access.kind === "trial"
               ? "Free week"
               : me.access.kind === "bonus"
                 ? "Full access from an invite"
                 : "Free plan"}
         </h2>
         <p className="mt-1 text-sm text-moss">
-          {me.access.kind === "pass"
+          {me.access.kind === "pass" || me.access.kind === "batch"
             ? `Active until ${fmt(me.access.until)}. Three missions a day and the full campaign.`
             : me.access.kind === "trial" || me.access.kind === "bonus"
               ? `Everything is unlocked until ${fmt(me.access.until)}. After that, Free keeps one mission a day.`
               : "One mission a day, in the pillar you pick. XP and ranks keep working."}
         </p>
-        {me.reservedAt !== null && me.access.kind !== "pass" ? (
+        {me.reservedAt !== null && me.access.kind !== "pass" && me.access.kind !== "batch" ? (
           <p className="mt-2 text-sm text-bone">
             You reserved Season Pass at ₹{me.reservedAt}. No payment taken. We&apos;ll tell you in the app when it opens.
           </p>
         ) : null}
-        {me.access.kind !== "pass" ? (
+        {me.access.kind !== "pass" && me.access.kind !== "batch" ? (
           <Link
             href="/pass?from=me"
             className="-mb-1.5 inline-flex min-h-11 items-center text-sm font-semibold text-brass hov:text-brass-light"
@@ -121,6 +126,8 @@ async function MeContent() {
         ) : null}
         <SettingsEditor current={me.pending?.settings ?? me.settings} />
       </section>
+
+      <CollegeSeason membership={membership} />
 
       <section className="mt-8" aria-labelledby="privacy">
         <h2 id="privacy" className="font-display text-[26px] leading-none font-extrabold">

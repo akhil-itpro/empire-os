@@ -24,6 +24,12 @@ export default function LoginPage() {
           Find your archetype
         </Link>
       </p>
+      <p className="mt-1 text-center text-sm text-moss">
+        Training and placement cell?{" "}
+        <Link href="/college" className="inline-flex min-h-11 items-center font-semibold text-brass hov:text-brass-light">
+          Open College HQ
+        </Link>
+      </p>
     </main>
   );
 }

@@ -45,3 +45,25 @@ test("Path, Stats and Me", async ({ page }) => {
     await page.screenshot({ path: `${dir}/${route}.png`, fullPage: true });
   }
 });
+
+test("College HQ (sample batch) at laptop and phone width", async ({ page }) => {
+  await page.goto("/api/test-login");
+  await page.getByRole("button", { name: "Create a sample batch" }).click();
+  await page.getByRole("link", { name: "Open the demo" }).last().click();
+  await page.getByRole("heading", { name: "CSE 2027 batch", level: 1 }).waitFor();
+  const overview = page.url();
+  await page.setViewportSize({ width: 1280, height: 980 });
+  await page.screenshot({ path: `${dir}/college-overview-laptop.png`, fullPage: true });
+  await page.getByRole("button", { name: /active,/ }).last().hover();
+  await page.screenshot({ path: `${dir}/college-tooltip.png` });
+  await page.goto(`${overview}/report`);
+  await page.getByRole("button", { name: "Save as PDF" }).waitFor();
+  await page.screenshot({ path: `${dir}/college-report.png`, fullPage: true });
+  await page.goto(`${overview}/poster`);
+  await page.getByRole("img", { name: /QR code/ }).waitFor();
+  await page.screenshot({ path: `${dir}/college-poster.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(overview);
+  await page.getByRole("heading", { name: "Sections this week" }).waitFor();
+  await page.screenshot({ path: `${dir}/college-overview-phone.png`, fullPage: true });
+});

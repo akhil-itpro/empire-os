@@ -84,7 +84,7 @@ Read: `docs/PRODUCT.md` sections 10 and 11, `docs/LAUNCH_CHECKLIST.md`.
 - [x] Links in the landing footer, sign-up screen and Me
 - [x] Download my data (JSON) and Delete my account (type DELETE), both showing the true result (verified in local test mode; recheck on Supabase)
 - [ ] `/security-check` run; every failure fixed; results recorded in `docs/LAUNCH_CHECKLIST.md`
-- [x] Founder HQ at `/founder` (roles table, server-written): funnel, Day-1/7/30 return, pillars, skips, paywall views, reservations, shares, referrals, launch checklist (verified in local test mode; College HQ numbers are a labelled placeholder until Phase 7)
+- [x] Founder HQ at `/founder` (roles table, server-written): funnel, Day-1/7/30 return, pillars, skips, paywall views, reservations, shares, referrals, launch checklist, colleges and batches (verified in local test mode)
 - [x] A normal user sees nothing at `/founder` (verified in local test mode)
 
 Done when: the founder can invite 10 friends without risking their data.
@@ -107,14 +107,14 @@ Done when: a test student drops to Free after day 7 (time travel), can't bypass 
 
 Read: `docs/PRODUCT.md` section 9, `College.dc.html`.
 
-- [ ] Tables `orgs`, `org_admins`, `batches`, `batch_members` with RLS by organisation
-- [ ] Join a batch with a code from Me or a link, with the consent screen; leaving works
-- [ ] Students in a paid batch get Season Pass access for the batch's season dates
-- [ ] College HQ overview matching `College.dc.html`: stat tiles, daily chart with table view and tooltips, need-a-nudge list, sections table, filters
-- [ ] In-app reminder to a student who needs a nudge
-- [ ] Weekly report page, printable and downloadable as PDF
-- [ ] Founder can create an organisation, a batch and a TPO invite from Founder HQ
-- [ ] RLS test: TPO of college A can't see college B; students who left are not visible
+- [ ] Tables `orgs`, `org_admins`, `batches`, `batch_members` with RLS by organisation (written, plus `org_invites` and `nudges`; proved on PGlite in `tests/unit/db.test.ts`; apply on Supabase)
+- [x] Join a batch with a code from Me or a link, with the consent screen; leaving works (verified in local test mode; recheck on Supabase)
+- [x] Students in a paid batch get Season Pass access for the batch's season dates (verified in local test mode; recheck on Supabase)
+- [x] College HQ overview matching `College.dc.html`: stat tiles, daily chart with table view and tooltips, need-a-nudge list, sections table, filters (verified in local test mode at 1280px and 390px)
+- [x] In-app reminder to a student who needs a nudge (verified in local test mode; recheck on Supabase)
+- [x] Weekly report page, printable and downloadable as PDF (through the browser's "Save as PDF"; verified in local test mode)
+- [x] Founder can create an organisation, a batch and a TPO invite from Founder HQ (verified in local test mode; recheck on Supabase)
+- [ ] RLS test: TPO of college A can't see college B; students who left are not visible (passes on PGlite; `npm run test:rls` now checks it on Supabase)
 
 Done when: the founder can demo College HQ to a TPO on a laptop and a phone with a seeded sample batch.
 

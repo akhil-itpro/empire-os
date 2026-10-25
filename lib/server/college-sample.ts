@@ -51,15 +51,16 @@ export function sampleBatchData(
       const name = `${FIRST_NAMES[(n * 7) % FIRST_NAMES.length]} ${INITIALS[(n * 5) % INITIALS.length]}.`;
       members.push({ userId, displayName: name, section, joinedOn: batch.startsOn });
       // Most students are fairly steady; some fade, and about one in ten stopped recently.
-      const steadiness = 0.45 + random() * 0.5;
+      const steadiness = 0.2 + random() * 0.65;
       const stoppedDaysAgo = random() < 0.1 ? 3 + Math.floor(random() * 5) : null;
       for (let d = batch.startsOn; d <= asOf; d = addDays(d, 1)) {
         if (stoppedDaysAgo !== null && d > addDays(asOf, -stoppedDaysAgo)) break;
         const weekend = [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay());
         if (random() > steadiness * (weekend ? 0.75 : 1)) continue;
-        const count = 1 + Math.floor(random() * 3);
+        const r = random();
+        const count = r < 0.2 ? 1 : r < 0.5 ? 2 : 3;
         for (let k = 0; k < count; k++) {
-          const missionId = k === 0 && random() < 0.04 ? pick(mocks) : k === 0 ? pick(career) : pick(others);
+          const missionId = k === 0 && random() < 0.015 ? pick(mocks) : k === 0 ? pick(career) : pick(others);
           missions.push({ userId, localDate: d, status: "done", missionId });
         }
       }

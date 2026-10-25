@@ -114,3 +114,14 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing (College HQ report and poster): white paper, ink text, no app chrome. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body {
+    background: white;
+  }
+}

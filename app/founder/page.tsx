@@ -15,6 +15,7 @@ import { storeForRequest } from "@/lib/server/deps";
 import { computeFounderMetrics } from "@/lib/server/founder";
 import { getSessionUserId } from "@/lib/server/session";
 import { Checklist } from "./Checklist";
+import { CollegeAdmin } from "./CollegeAdmin";
 
 export const metadata: Metadata = { title: "Founder HQ", robots: { index: false, follow: false } };
 
@@ -52,7 +53,11 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
   const to = localDate(new Date(), "Asia/Kolkata");
   const from = addDays(to, -(range - 1));
   const toLocal = (d: Date) => localDate(d, "Asia/Kolkata");
-  const [snapshot, checklist] = await Promise.all([store.founderSnapshot(from), store.listChecklist()]);
+  const [snapshot, checklist, colleges] = await Promise.all([
+    store.founderSnapshot(from),
+    store.listChecklist(),
+    store.listOrgs(),
+  ]);
   const m = computeFounderMetrics(snapshot, from, to, toLocal);
   const totalSignups = m.signupsPerDay.reduce((s, d) => s + d.count, 0);
   const doneByPillar = Math.max(1, ...PILLARS.map((p) => m.missionsByPillar[p]));
@@ -180,8 +185,8 @@ async function FounderContent({ searchParams }: { searchParams: PageProps<"/foun
           )}
         </Card>
 
-        <Card title="Colleges and batches">
-          <p className="text-sm text-moss">Placeholder: these numbers arrive with College HQ (Phase 7).</p>
+        <Card title="Colleges and batches" className="md:col-span-2">
+          <CollegeAdmin colleges={colleges} />
         </Card>
 
         <Card title="Launch checklist" className="md:col-span-2">
