@@ -8,7 +8,7 @@ import type { Pillar } from "@/lib/pillars";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { selectDailyMissions } from "@/lib/plan-engine/select";
-import { ensureToday, packContext, packNameOf, settingsOn, type Deps, type Result } from "./season-service";
+import { ensureToday, packContext, packNameOf, settingsOn, weekAdjustments, type Deps, type Result } from "./season-service";
 import type { MissionStatus, ShareName } from "./store";
 
 export type TicketData = {
@@ -109,6 +109,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
         archetype: t.profile.archetype,
         settings: settingsOn(t.profile, date),
         history,
+        adjustments: await weekAdjustments(store, t.profile, pos.week),
         ...(await packContext(deps, t.profile, t.today, true)),
       });
       if (first) tomorrow = { title: first.mission.title, pillar: first.mission.pillar, minutes: first.mission.minutes };

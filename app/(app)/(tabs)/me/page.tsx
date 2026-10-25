@@ -125,6 +125,13 @@ async function MeContent() {
           </p>
         ) : null}
         <SettingsEditor current={me.pending?.settings ?? me.settings} />
+        <Link
+          href="/war-room"
+          className="mt-3 flex min-h-12 items-center justify-between rounded-xl border border-rule bg-ledger px-4 text-[15px] font-semibold hov:bg-raised"
+        >
+          War Room: review your week
+          <span className="text-sm font-normal text-moss">Every 7 days</span>
+        </Link>
       </section>
 
       <CollegeSeason membership={membership} />

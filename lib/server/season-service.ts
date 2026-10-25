@@ -24,7 +24,7 @@ import { PLAN_CONFIG } from "@/lib/plan-engine/config";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import type { Mission } from "@/lib/plan-engine/missions";
 import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
-import { effectiveMinutes, selectDailyMissions, type PlanSettings } from "@/lib/plan-engine/select";
+import { effectiveMinutes, selectDailyMissions, type PlanSettings, type WeekAdjustments } from "@/lib/plan-engine/select";
 import { linkReferral, rewardReferral } from "./referral-service";
 import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
 
@@ -181,6 +181,15 @@ export async function packContext(deps: Deps, profile: Profile, today: LocalDate
   return { packs: [...profile.activePacks], packDone };
 }
 
+/** War Room changes for a week: from the review of the week before, if they were applied. */
+export async function weekAdjustments(store: SeasonStore, profile: Profile, week: number): Promise<WeekAdjustments | undefined> {
+  if (week < 2) return undefined;
+  const review = await store.getWeeklyReview(profile.id, profile.seasonNumber, week - 1);
+  if (!review?.outcome.applied) return undefined;
+  const { difficultyShift, timeTierShift, freeOnly, focusTag, focusPillar, quickWinMax } = review.outcome;
+  return { difficultyShift, timeTierShift, freeOnly, focusTag, focusPillar, quickWinMax };
+}
+
 async function recentHistory(deps: Deps, userId: string, today: LocalDate) {
   const rows = await deps.store.listMissions(userId, addDays(today, -PLAN_CONFIG.noRepeatDays), addDays(today, -1));
   return rows.map((m) => ({ missionId: m.missionId, date: m.localDate }));
@@ -213,6 +222,7 @@ export async function ensureToday(deps: Deps, userId: string): Promise<Result<To
     archetype: profile.archetype,
     settings: settingsOn(profile, state.today),
     history: await recentHistory(deps, userId, state.today),
+    adjustments: await weekAdjustments(deps.store, profile, state.week),
     ...(await packContext(deps, profile, state.today, true)),
   });
   await deps.store.insertMissions(picked.map((p) => toRow(userId, state.today, p.slot, p.mission)));
@@ -352,9 +362,10 @@ export async function swapMission(deps: Deps, userId: string, missionRowId: unkn
   if (state.swapsLeft <= 0) return fail("swap_limit", "You've used today's swap. You get a new one tomorrow.");
 
   const settings = settingsOn(state.profile, state.today);
+  const adjustments = state.fullAccess ? await weekAdjustments(deps.store, state.profile, state.week) : undefined;
   const allToday = await deps.store.listMissions(userId, state.today, state.today);
   const usedMinutes = state.missions.filter((m) => m.id !== target.id).reduce((s, m) => s + m.minutes, 0);
-  const maxMinutes = Math.max(target.minutes, effectiveMinutes(settings.dailyMinutes) - usedMinutes);
+  const maxMinutes = Math.max(target.minutes, effectiveMinutes(settings.dailyMinutes, adjustments?.timeTierShift ?? 0) - usedMinutes);
 
   const [replacement] = selectDailyMissions(deps.library ?? LIBRARY, {
     seed: `${userId}|swap`,
@@ -368,6 +379,7 @@ export async function swapMission(deps: Deps, userId: string, missionRowId: unkn
     singlePillar: target.pillar,
     excludeIds: allToday.map((m) => m.missionId),
     maxMinutes,
+    adjustments,
     ...(await packContext(deps, state.profile, state.today, state.fullAccess)),
   });
   if (!replacement) {

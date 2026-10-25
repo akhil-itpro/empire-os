@@ -14,7 +14,7 @@ export const FOUNDER_PLACES = 500;
 export const PAYMENTS_LIVE = false;
 
 /** Where the paywall was opened from, for Founder HQ's "paywall views by source". */
-export const PAYWALL_SOURCES = ["trial_end", "trial_banner", "free_hq", "path_week", "pack", "me", "direct"] as const;
+export const PAYWALL_SOURCES = ["trial_end", "trial_banner", "free_hq", "path_week", "pack", "me", "war_room", "direct"] as const;
 export type PaywallSource = (typeof PAYWALL_SOURCES)[number];
 
 export function paywallSource(value: unknown): PaywallSource {

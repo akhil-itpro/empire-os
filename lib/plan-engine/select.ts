@@ -21,6 +21,12 @@ export type WeekAdjustments = {
   freeOnly?: boolean;
   /** Extra preference, e.g. "energy" for an energy blocker. */
   focusTag?: MissionTag;
+  /** The focus pillar takes the rotating third slot every day (if it isn't already slot 1 or 2). */
+  focusPillar?: Pillar;
+  /** A low week keeps the daily quick win this short (5 minutes). */
+  quickWinMax?: number;
+  /** A weekly boss mission (+150 XP) is on, with this mission. */
+  bossMissionId?: string;
 };
 
 export type DayContext = {
@@ -79,8 +85,12 @@ export function effectiveMinutes(dailyMinutes: number, tierShift: number = 0): n
   return tiers[shifted];
 }
 
-/** Pillars for the three slots: top pillar, second pillar, then the other two in turn. */
-export function slotPillars(order: Pillar[], seasonDay: number): [Pillar, Pillar, Pillar] {
+/**
+ * Pillars for the three slots: top pillar, second pillar, then the other two in turn.
+ * A War Room focus pillar outside the top two takes the third slot every day.
+ */
+export function slotPillars(order: Pillar[], seasonDay: number, focus?: Pillar): [Pillar, Pillar, Pillar] {
+  if (focus && focus !== order[0] && focus !== order[1]) return [order[0], order[1], focus];
   const rotating = seasonDay % 2 === 1 ? order[2] : order[3];
   return [order[0], order[1], rotating];
 }
@@ -160,13 +170,13 @@ export function selectDailyMissions(library: Mission[], ctx: DayContext): Select
     return mission ? [{ slot: 1, pillar: ctx.singlePillar, mission }] : [];
   }
 
-  const pillars = slotPillars(settings.pillarOrder, ctx.seasonDay);
+  const pillars = slotPillars(settings.pillarOrder, ctx.seasonDay, adjustments.focusPillar);
   // The quick-win slot rotates so every pillar gets longer missions too.
   // On Day 1 it is slot 1: "Do this one now. It takes 5 minutes."
   const quickSlot = (ctx.seasonDay - 1) % 3;
   // Leave at least 5 minutes for each of the other two missions.
   const quickMax = Math.min(
-    ctx.seasonDay === 1 ? 5 : PLAN_CONFIG.quickWinMaxMinutes,
+    ctx.seasonDay === 1 ? 5 : (adjustments.quickWinMax ?? PLAN_CONFIG.quickWinMaxMinutes),
     budgetMinutes - 10,
   );
   const chosen: (SelectedMission | null)[] = [null, null, null];
@@ -192,4 +202,36 @@ export function selectDailyMissions(library: Mission[], ctx: DayContext): Select
   });
 
   return chosen.filter((c): c is SelectedMission => c !== null);
+}
+
+/**
+ * The week's boss mission: the hardest, longest mission in the pillar that still
+ * fits the student's daily time, budget and equipment, and wasn't given recently.
+ */
+export function selectBossMission(
+  library: Mission[],
+  ctx: Pick<DayContext, "seed" | "date" | "settings" | "history" | "adjustments" | "act"> & { pillar: Pillar },
+): Mission | null {
+  const { settings, adjustments = {} } = ctx;
+  const budgetMinutes = effectiveMinutes(settings.dailyMinutes, adjustments.timeTierShift ?? 0);
+  const allowedCosts: readonly string[] = adjustments.freeOnly ? ["free"] : PLAN_CONFIG.costsByBudget[settings.budget];
+  const recent = new Set(ctx.history.map((h) => h.missionId));
+  const pool = library.filter(
+    (m) =>
+      m.pack === null &&
+      m.pillar === ctx.pillar &&
+      m.difficulty >= 2 &&
+      m.minutes <= budgetMinutes &&
+      allowedCosts.includes(m.cost) &&
+      (m.needs !== "gym" || settings.gym) &&
+      (m.needs !== "laptop" || settings.laptop),
+  );
+  if (pool.length === 0) return null;
+  const score = (m: Mission) =>
+    m.difficulty * 100 +
+    m.minutes +
+    (m.act === ctx.act ? 20 : 0) -
+    (recent.has(m.id) ? 500 : 0) +
+    stableFraction(`${ctx.seed}|boss|${ctx.date}|${m.id}`);
+  return pool.reduce((a, b) => (score(b) > score(a) ? b : a));
 }

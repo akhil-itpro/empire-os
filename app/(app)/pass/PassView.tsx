@@ -14,11 +14,11 @@ const nf = new Intl.NumberFormat("en-IN");
 const longDate = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", timeZone: "UTC" });
 const fmt = (d: string) => longDate.format(new Date(`${d}T00:00:00Z`));
 
-// Only what is built today. Add "A weekly War Room that adapts your plan" when
-// Phase 8 ships, and the Day-90 certificate if it is ever built.
+// Only what is built today. Add the Day-90 certificate if it is ever built.
 const UNLOCKS = [
   "Three missions a day across all four pillars",
   "The full 13-week campaign map",
+  "A weekly War Room that adapts your plan",
   "Four mission packs, like Placement Prep and Home Muscle",
   "One streak shield every week",
 ];
@@ -30,6 +30,7 @@ const BACK: Record<PaywallSource, { href: string; label: string }> = {
   path_week: { href: "/path", label: "Back to Path" },
   pack: { href: "/path", label: "Back to Path" },
   me: { href: "/me", label: "Back to Me" },
+  war_room: { href: "/war-room", label: "Back to the War Room" },
   direct: { href: "/hq", label: "Back to HQ" },
 };
 

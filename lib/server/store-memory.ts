@@ -10,6 +10,8 @@ import type {
   EventName,
   Nudge,
   Org,
+  ReviewOutcome,
+  WeeklyReview,
   PendingSettings,
   MissionStatus,
   NewProfile,
@@ -32,6 +34,18 @@ const memberOut = (m: BatchMember): BatchMember => ({
   joinedAt: m.joinedAt,
 });
 const nudgeOut = (n: Nudge): Nudge => ({ id: n.id, batchId: n.batchId, userId: n.userId, localDate: n.localDate, seenAt: n.seenAt });
+
+const reviewOut = (r: WeeklyReview): WeeklyReview =>
+  structuredClone({
+    seasonNumber: r.seasonNumber,
+    week: r.week,
+    felt: r.felt,
+    blocker: r.blocker,
+    changes: r.changes,
+    focusPillar: r.focusPillar,
+    outcome: r.outcome,
+    createdAt: r.createdAt,
+  });
 
 export class MemoryStore implements SeasonStore {
   profiles = new Map<string, Profile>();
@@ -245,6 +259,7 @@ export class MemoryStore implements SeasonStore {
       journal: this.journal.filter((j) => j.userId === userId),
       referrals: this.referrals.filter((r) => r.referrerId === userId || r.referredId === userId),
       events: this.events.filter((e) => e.userId === userId),
+      weekly_reviews: this.reviews.filter((r) => r.userId === userId),
       batch_membership: this.members.filter((m) => m.userId === userId),
       nudges: this.nudges.filter((n) => n.userId === userId).map(nudgeOut),
     };
@@ -261,6 +276,7 @@ export class MemoryStore implements SeasonStore {
     this.reservations = this.reservations.filter((r) => r.userId !== userId);
     this.referrals = this.referrals.filter((r) => r.referrerId !== userId && r.referredId !== userId);
     this.members = this.members.filter((m) => m.userId !== userId);
+    this.reviews = this.reviews.filter((r) => r.userId !== userId);
     this.nudges = this.nudges.filter((n) => n.userId !== userId);
     this.orgAdmins = this.orgAdmins.filter((a) => a.userId !== userId);
     // Events stay, but no longer linked to anyone (like the database's "on delete set null").
@@ -294,6 +310,32 @@ export class MemoryStore implements SeasonStore {
 
   async setChecklistItem(id: string, done: boolean) {
     this.checklist = this.checklist.map((c) => (c.id === id ? { ...c, done } : c));
+  }
+
+  // --- War Room ---
+
+  reviews: (WeeklyReview & { userId: string })[] = [];
+
+  async getWeeklyReview(userId: string, seasonNumber: number, week: number) {
+    const r = this.reviews.find((x) => x.userId === userId && x.seasonNumber === seasonNumber && x.week === week);
+    return r ? reviewOut(r) : null;
+  }
+
+  async insertWeeklyReview(userId: string, review: Omit<WeeklyReview, "createdAt">) {
+    if (this.reviews.some((x) => x.userId === userId && x.seasonNumber === review.seasonNumber && x.week === review.week)) {
+      return "exists" as const;
+    }
+    this.reviews.push({ ...structuredClone(review), userId, createdAt: new Date() });
+    return "created" as const;
+  }
+
+  async updateReviewOutcome(userId: string, seasonNumber: number, week: number, outcome: ReviewOutcome) {
+    const r = this.reviews.find((x) => x.userId === userId && x.seasonNumber === seasonNumber && x.week === week);
+    if (r) r.outcome = structuredClone(outcome);
+  }
+
+  async hasXp(userId: string, kind: XpKind, ref: string) {
+    return this.xp.some((e) => e.userId === userId && e.kind === kind && e.ref === ref);
   }
 
   // --- College HQ ---

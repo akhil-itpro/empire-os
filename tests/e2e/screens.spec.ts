@@ -67,3 +67,18 @@ test("College HQ (sample batch) at laptop and phone width", async ({ page }) => 
   await page.getByRole("heading", { name: "Sections this week" }).waitFor();
   await page.screenshot({ path: `${dir}/college-overview-phone.png`, fullPage: true });
 });
+
+test("War Room form and results", async ({ page, context }) => {
+  await startSeason(page);
+  await travelDays(context, 6);
+  await page.goto("/war-room");
+  await page.getByRole("button", { name: "Set next week" }).waitFor();
+  await page.getByRole("button", { name: "Too hard" }).click();
+  await page.getByRole("button", { name: "Energy" }).click();
+  await page.getByRole("button", { name: "My goal" }).click();
+  await page.screenshot({ path: `${dir}/war-room-form.png`, fullPage: true });
+  await page.getByRole("button", { name: /Get fit and strong/ }).click();
+  await page.getByRole("button", { name: "Set next week" }).click();
+  await page.getByRole("heading", { name: "Apply new plan?" }).waitFor();
+  await page.screenshot({ path: `${dir}/war-room-results.png`, fullPage: true });
+});

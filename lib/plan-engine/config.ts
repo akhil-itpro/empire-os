@@ -63,6 +63,22 @@ export const PLAN_CONFIG = {
   /** A mission doesn't come back within this many days. */
   noRepeatDays: 5,
 
+  /** War Room rules (docs/PRODUCT.md section 8): how one week's review changes the next. */
+  warRoom: {
+    /** Under this share of missions done (or "too hard"): one time tier and one difficulty level down. */
+    lowCompletion: 0.5,
+    /** Over this share (and not "too hard"): one difficulty level up and a boss mission. */
+    highCompletion: 0.85,
+    /** XP for the weekly boss mission. */
+    bossXp: 150,
+    /** In a low week the daily quick win is this short. */
+    lowWeekQuickWinMinutes: 5,
+    /** The mission tag an energy blocker adds (sleep and energy missions). */
+    energyTag: "energy",
+    /** Reviews exist for weeks 1 to 12; week 13 ends the season. */
+    lastReviewWeek: 12,
+  },
+
   /** Scoring weights: higher scores win; ties break by a stable per-student hash. */
   weights: {
     actMatch: 30,

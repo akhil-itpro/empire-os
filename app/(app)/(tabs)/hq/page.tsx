@@ -6,8 +6,10 @@ import { studentNudge } from "@/lib/server/college-service";
 import { depsFor } from "@/lib/server/deps";
 import { loadHq } from "@/lib/server/hq";
 import { getSessionUserId } from "@/lib/server/session";
+import { hqWarRoom } from "@/lib/server/war-room-service";
 import { HqView } from "./HqView";
 import { NudgeBanner } from "./NudgeBanner";
+import { WarRoomCards } from "./WarRoomCards";
 
 export const metadata: Metadata = { title: "HQ", robots: { index: false } };
 
@@ -28,11 +30,15 @@ async function HqContent({ searchParams }: { searchParams: PageProps<"/hq">["sea
   const result = await loadHq(deps, userId);
   if (!result.ok) redirect(result.error === "not_started" ? "/quiz" : "/login");
   const first = (await searchParams).first === "1";
-  const nudge = await studentNudge(deps, userId);
+  const [nudge, warRoom] = await Promise.all([studentNudge(deps, userId), hqWarRoom(deps, userId)]);
   return (
     <>
       {nudge ? <NudgeBanner id={nudge.id} orgName={nudge.orgName} /> : null}
-      <HqView data={result.data} first={first} />
+      <HqView
+        data={result.data}
+        first={first}
+        extras={<WarRoomCards dueWeek={result.data.seasonFinished ? null : warRoom.dueWeek} boss={warRoom.boss} />}
+      />
     </>
   );
 }

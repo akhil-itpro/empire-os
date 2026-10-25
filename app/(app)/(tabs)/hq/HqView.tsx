@@ -4,7 +4,7 @@ import { Check, Flame } from "lucide-react";
 import { animate, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   chooseFreePillar,
   completeMission,
@@ -76,7 +76,7 @@ function useCountUp(value: number) {
   return reduceMotion ? value : shown;
 }
 
-export function HqView({ data, first }: { data: HqData; first: boolean }) {
+export function HqView({ data, first, extras }: { data: HqData; first: boolean; extras?: ReactNode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   // Missions marked done here before the server answers, so the stamp is instant.
@@ -304,6 +304,8 @@ export function HqView({ data, first }: { data: HqData; first: boolean }) {
       <p className="mx-5 mt-3 min-h-5 text-sm text-bone" role="status" aria-live="polite">
         {message}
       </p>
+
+      {extras}
 
       <MissionSheet
         mission={open}

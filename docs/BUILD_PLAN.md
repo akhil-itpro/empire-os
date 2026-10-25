@@ -122,11 +122,11 @@ Done when: the founder can demo College HQ to a TPO on a laptop and a phone with
 
 Read: `docs/PRODUCT.md` section 8.
 
-- [ ] Weekly review every 7 days and from Me
-- [ ] Adaptation rules in the plan-engine config, with unit tests for each rule
-- [ ] "What changed and why" screen with real numbers; low-week copy
-- [ ] City or goal change regenerates future weeks only after confirmation; history, XP and rank unchanged
-- [ ] Free students see the preview and one upgrade button
+- [x] Weekly review every 7 days and from Me (from HQ on day 7, 14, ...; verified in local test mode; recheck on Supabase)
+- [x] Adaptation rules in the plan-engine config, with unit tests for each rule (`PLAN_CONFIG.warRoom`, `lib/plan-engine/war-room.ts`, `tests/unit/war-room.test.ts`)
+- [x] "What changed and why" screen with real numbers; low-week copy (verified in local test mode)
+- [x] City or goal change regenerates future weeks only after confirmation; history, XP and rank unchanged (applies from tomorrow; verified in local test mode)
+- [x] Free students see the preview and one upgrade button (verified in local test mode)
 
 Done when: two test students with different completion patterns get visibly different next weeks.
 

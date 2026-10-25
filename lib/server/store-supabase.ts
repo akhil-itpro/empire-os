@@ -13,6 +13,8 @@ import type {
   BatchMember,
   EventName,
   MemberMission,
+  ReviewOutcome,
+  WeeklyReview,
   PendingSettings,
   MissionStatus,
   NewProfile,
@@ -503,6 +505,68 @@ export class SupabaseSeasonStore implements SeasonStore {
   async isFounder(userId: string) {
     const { data, error } = await this.db.from("roles").select("role").eq("user_id", userId).eq("role", "founder").maybeSingle();
     if (error) fail("isFounder", error);
+    return Boolean(data);
+  }
+
+  // --- War Room ---
+
+  async getWeeklyReview(userId: string, seasonNumber: number, week: number) {
+    const { data, error } = await this.db
+      .from("weekly_reviews")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("season_number", seasonNumber)
+      .eq("week", week)
+      .maybeSingle();
+    if (error) fail("getWeeklyReview", error);
+    if (!data) return null;
+    return {
+      seasonNumber: data.season_number,
+      week: data.week,
+      felt: data.felt,
+      blocker: data.blocker,
+      changes: data.changes ?? [],
+      focusPillar: data.focus_pillar as Pillar,
+      outcome: data.adjustments as unknown as ReviewOutcome,
+      createdAt: new Date(data.created_at),
+    };
+  }
+
+  async insertWeeklyReview(userId: string, r: Omit<WeeklyReview, "createdAt">) {
+    const { error } = await this.db.from("weekly_reviews").insert({
+      user_id: userId,
+      season_number: r.seasonNumber,
+      week: r.week,
+      felt: r.felt,
+      blocker: r.blocker,
+      changes: r.changes,
+      focus_pillar: r.focusPillar,
+      adjustments: r.outcome as unknown as Record<string, unknown>,
+    });
+    if (error?.code === UNIQUE_VIOLATION) return "exists" as const;
+    if (error) fail("insertWeeklyReview", error);
+    return "created" as const;
+  }
+
+  async updateReviewOutcome(userId: string, seasonNumber: number, week: number, outcome: ReviewOutcome) {
+    const { error } = await this.db
+      .from("weekly_reviews")
+      .update({ adjustments: outcome as unknown as Record<string, unknown> })
+      .eq("user_id", userId)
+      .eq("season_number", seasonNumber)
+      .eq("week", week);
+    if (error) fail("updateReviewOutcome", error);
+  }
+
+  async hasXp(userId: string, kind: XpKind, ref: string) {
+    const { data, error } = await this.db
+      .from("xp_events")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("kind", kind)
+      .eq("ref", ref)
+      .maybeSingle();
+    if (error) fail("hasXp", error);
     return Boolean(data);
   }
 

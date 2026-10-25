@@ -7,7 +7,7 @@ import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
 import type { PackId } from "@/lib/plan-engine/packs";
-import type { PlanSettings } from "@/lib/plan-engine/select";
+import type { PlanSettings, WeekAdjustments } from "@/lib/plan-engine/select";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
 
 export type MissionStatus = "assigned" | "done" | "skipped" | "swapped";
@@ -22,6 +22,7 @@ export type EventName =
   | "reserve_click"
   | "referral_signup"
   | "referral_reward"
+  | "weekly_review_done"
   // Browser events, logged by the server only in local test mode (see app/api/test-event).
   | ClientEvent;
 
@@ -88,6 +89,37 @@ export type StatsRow = {
 export type Reservation = { priceInr: number; founderPrice: boolean; createdAt: Date };
 
 export type ReferralStatus = "signed_up" | "qualified" | "rewarded" | "blocked";
+
+/** What a War Room review saved: next week's changes and how they were explained. */
+export type ReviewOutcome = WeekAdjustments & {
+  boss?: boolean;
+  reasons: string[];
+  lowWeek: boolean;
+  /** False for Free students: they see what would change, but nothing is applied. */
+  applied: boolean;
+  /** This week's numbers, kept so the results screen shows the same figures later. */
+  done: number;
+  assigned: number;
+  /** A city or goal change waits for "Apply new plan?". */
+  proposal?: {
+    goal: Answers["goal"];
+    city: Answers["city"];
+    fromGoal: Answers["goal"];
+    fromCity: Answers["city"];
+    status: "open" | "applied" | "kept";
+  };
+};
+
+export type WeeklyReview = {
+  seasonNumber: number;
+  week: number;
+  felt: string;
+  blocker: string;
+  changes: string[];
+  focusPillar: Pillar;
+  outcome: ReviewOutcome;
+  createdAt: Date;
+};
 
 // College HQ (docs/PRODUCT.md section 9).
 export type Org = { id: string; name: string; city: string | null };
@@ -195,6 +227,14 @@ export interface SeasonStore {
   deleteUser(userId: string): Promise<void>;
   /** True if any login or profile still exists for the user (to report the true result). */
   userExists(userId: string): Promise<boolean>;
+
+  // --- War Room ---
+  getWeeklyReview(userId: string, seasonNumber: number, week: number): Promise<WeeklyReview | null>;
+  /** "exists" when this week was already reviewed (the first review stands). */
+  insertWeeklyReview(userId: string, review: Omit<WeeklyReview, "createdAt">): Promise<"created" | "exists">;
+  updateReviewOutcome(userId: string, seasonNumber: number, week: number, outcome: ReviewOutcome): Promise<void>;
+  /** True if this XP grant already exists (the weekly boss, for example). */
+  hasXp(userId: string, kind: XpKind, ref: string): Promise<boolean>;
 
   // --- College HQ. Callers check the founder role or org admin rights first. ---
   createOrg(name: string, city: string | null): Promise<Org>;
