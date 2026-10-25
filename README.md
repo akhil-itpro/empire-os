@@ -6,7 +6,7 @@ Built for students and freshers in India (18 to 28), and for the engineering-col
 
 ## Status
 
-**Active build: Phases 1 to 6 built; waiting on the database and hosting accounts to go live.** Built and tested in a browser (with a local stand-in database): the design system, the quiz and archetype reveal, the plan engine with 120 missions plus four 10-mission packs, the daily loop (HQ, mission stamp, swap and skip, Path, Stats, Me), privacy and terms drafts, data export and delete, Founder HQ, the Season Pass paywall in reserve mode (no payment is taken), share cards and invite links with rewards. Not live yet: real sign-in and data storage (needs the Supabase project), the website on Vercel, College HQ, the War Room and payments. Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
+**All ten build phases are written; going live waits on the database, hosting and payment accounts.** Built and tested in a browser (with a local stand-in database): the design system, the quiz and archetype reveal, the plan engine with 120 missions plus four 10-mission packs, the daily loop (HQ, mission stamp, swap and skip, Path, Stats, Me), privacy and terms drafts, data export and delete, Founder HQ, the Season Pass paywall (reserve mode by default), share cards and invite links with rewards, College HQ for training and placement cells, the weekly War Room, the `/colleges` page with demo requests, two guides, and Razorpay checkout (switched off until the founder adds keys; tested against a stand-in). Not live yet: real sign-in and data storage (needs the Supabase project), the website on Vercel, and real payments (need Razorpay KYC and keys). Verified progress is ticked in [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
 
 ## What it will do
 
@@ -26,7 +26,7 @@ Built for students and freshers in India (18 to 28), and for the engineering-col
 | Data and login | Supabase: Postgres with row-level security on every personal table, email one-time code and Google sign-in |
 | Testing | Vitest for game rules and the plan engine, Playwright for end-to-end tests at phone size |
 | Hosting | Vercel |
-| Payments (later) | Razorpay, verified on the server only |
+| Payments | Razorpay, verified on the server only (off until keys are added) |
 
 ## How it's built
 

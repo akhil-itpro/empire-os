@@ -4,81 +4,73 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Last updated
 
-2026-10-24, by Claude (Opus 5.5). Session paused at a clean point after Phase 6.
+2026-10-25, by Claude (Opus 5.5). Clean point after Phase 10: every phase is written and tested locally.
 
 ## Current phase and step
 
-The founder approved building every phase back to back ("I want the complete app"), stopping only when they must act. Status by phase (boxes in `docs/BUILD_PLAN.md`):
+All ten phases are built. What's left is going live, which needs the founder's accounts. Status by phase (boxes in `docs/BUILD_PLAN.md`):
 
 - Phase 0: 3 of 6. Supabase, its MCP server and Vercel wait on the founder.
 - Phase 1: done, tagged `phase-1-done`.
-- Phase 2: 3 of 7. Written and tested locally; open boxes need the real Supabase project (apply migrations, seed, run actions for real, `npm run test:rls`).
-- Phase 3: 7 of 10. Open: real sign-up, event logging check, full landing-to-HQ test on Supabase.
-- Phase 4: 8 of 8, verified in local test mode; recheck on Supabase.
-- Phase 5: 5 of 6 (verified in local test mode). Open: `/security-check` checks 1 to 3 on Supabase.
-- Phase 6: 7 of 7, verified in local test mode. Not tagged: recheck on Supabase, and try the real share sheet on Android and iPhone after deploy.
-- Phases 7 to 10: not started.
+- Phases 2 to 6: built and verified in local test mode. Open boxes need the real Supabase project (apply migrations, `npm run test:rls`, real sign-up and events).
+- Phase 7 (College HQ): 6 of 8. Open: apply the migration on Supabase and run `npm run test:rls` (it now checks college isolation).
+- Phase 8 (War Room): 5 of 5, verified in local test mode; recheck on Supabase.
+- Phase 9 (website): 3 of 4. Open: PageSpeed Insights on the live link (local Lighthouse 12 mobile: `/` 96, `/colleges` 94, guide 96).
+- Phase 10 (payments): 5 of 8. Built behind a switch and tested against a stand-in Razorpay. Open: founder's keys, Razorpay test-mode run, Instagram in-app browser check. The plan's gate still applies: Razorpay KYC, Day-7 return at 15% or more, and real reservations before turning payments on.
+- No phase from 2 on is tagged yet: tags wait for each phase's "Done when" on the real Supabase project.
 
 ## What this session did
 
-- Phase 6, in 6 commits from `01ec125` to `5378bef`, all pushed:
-  - Four packs of 10 missions (`lib/plan-engine/packs.ts`), turned on from Path, preferred in their pillar, locked on Free.
-  - Paywall `/pass` in reserve mode (prices from the server's founder count, reservations saved, no payment), opened from the day-6 banner, Free HQ, locked weeks, packs and Me, and uninvited once on the first visit after full access ends.
-  - Four share cards as 1080 × 1920 PNGs (`app/api/share/[kind]/route.tsx`), with a share sheet and a save fallback, from Me, milestone moments and season end.
-  - Invite links `/r/CODE` and rewards (7 days each on the friend's third active day, 5 per inviter, email-alias self-referrals blocked).
-- Two migrations: `20261024163534_seed_mission_library_packs.sql` (generated) and `20261024170000_packs_and_rewards.sql`. `npm run test:rls` now also tries the Phase 6 cheats.
-- Fixed the rank-up moment saying "a Operator". Made three browser tests wait for the server instead of the instant stamp; the suite then passed 5 runs in a row.
-- Checks run at the end: 138 unit tests and 48 Playwright tests pass (2 screenshot tests skipped by design), lint and typecheck clean, `npm run build` passes.
+- Phase 7 College HQ: tables `orgs`, `org_admins`, `org_invites`, `batches`, `batch_members`, `nudges` with RLS by organisation; joining with a consent screen from Me or `/join/CODE`; leaving; paid batches give Season Pass access (counts as Season Pass, including shields); overview, students, batches, invite (code, link, A4 poster with QR), printable weekly report; in-app reminders on HQ; founder tools and a labelled sample batch in Founder HQ.
+- Phase 8 War Room: rules in `PLAN_CONFIG.warRoom` and `lib/plan-engine/war-room.ts`; review on day 7, 14, ...; "What changed and why" with real numbers, "Reset, don't quit" copy, boss mission (+150 XP), goal or city change with "Apply new plan?", Free preview with one upgrade button.
+- Phase 9: `/colleges` with real College HQ screens, honest pilot pricing and a demo form (table `demo_requests`, shown in Founder HQ); two guides; share images, sitemap, robots; Latin-only WOFF2 display fonts (about 13 KB each) for speed.
+- Phase 10: Razorpay orders, server-verified grants, idempotent webhooks, redirect callback for in-app browsers, receipts in Me. Off unless `PAYMENTS_LIVE=1` and the three keys are set.
+- Fixed a real bug: a quick second tap on a just-finished ticket could undo it. Undo now lives only in the mission sheet.
+- Checks at the end: 195 unit tests and 57 Playwright tests pass (5 screenshot tests skipped by design), lint and typecheck clean, `npm run build` passes.
 
 ## Next step
 
-Phase 7 (College HQ): read `docs/PRODUCT.md` section 9 and `design/screens/College.dc.html`, plan, then build tables `orgs`, `org_admins`, `batches`, `batch_members` with RLS by organisation, joining with consent, batch access as Season Pass, the overview, nudges, the weekly report and founder setup. When the founder has Supabase ready, do that first: apply all five migrations, regenerate types, run `npm run test:rls`, recheck Phases 2 to 6.
+When the founder has Supabase: apply all eight migrations in `supabase/migrations/`, regenerate types (compare with the hand-written `lib/supabase/types.ts`), run `npm run test:rls`, then recheck Phases 2 to 10 on the real database and tick boxes. Then Vercel deploy, PageSpeed on the live link, share a card and the `/colleges` link on WhatsApp, and tag phases whose "Done when" passes.
 
 ## Waiting on the founder
 
-- [ ] Kickoff step 5: create the Supabase project `empire-os-dev` in South Asia (Mumbai), fill the three values into `.env.local` (Claude created it from `.env.example`, values empty), and tell Claude the Project ID (not secret) for `.mcp.json`. Then `/mcp` to authenticate the Supabase MCP server.
-- [ ] Kickoff step 6: import the repository into Vercel and add the same three environment variables.
-- [ ] For email codes: in Supabase, Authentication, Email Templates, "Magic Link", include `{{ .Token }}` so the email shows a 6-digit code.
-- [ ] For Google sign-in: a Google Cloud OAuth client, added under Supabase Authentication, Providers, Google.
-- [ ] Confirm the five-line product summary Claude gave at kickoff step 2.
-- [ ] After deploy: share a card from a real Android phone and a real iPhone.
+- [ ] Revoke the Groq API key pasted into the chat on 2026-10-25 (Groq console, API Keys). It was not used or saved anywhere.
+- [ ] Kickoff step 5: create the Supabase project `empire-os-dev` in South Asia (Mumbai), fill the three values into `.env.local`, and tell Claude the Project ID (not secret). Then `/mcp` to authenticate the Supabase MCP server.
+- [ ] Kickoff step 6: import the repository into Vercel and add the same three variables, plus `NEXT_PUBLIC_SITE_URL` once there is a domain.
+- [ ] Email codes: Supabase, Authentication, Email Templates, "Magic Link": include `{{ .Token }}`.
+- [ ] Google sign-in: a Google Cloud OAuth client, added under Supabase Authentication, Providers, Google.
+- [ ] After deploy: share a card from a real Android phone and iPhone; paste `/colleges` into WhatsApp to check the preview.
+- [ ] Payments, only after Razorpay KYC and the Day-7 gate: add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` (test-mode keys first) to `.env.local` and Vercel, set the webhook URL to `https://<site>/api/payments/webhook` with events `payment.captured`, `payment.failed`, `order.paid`, then `PAYMENTS_LIVE=1`.
+- [ ] Fill the placeholders in `/privacy` and `/terms`: [OPERATOR NAME], [CONTACT EMAIL], [GRIEVANCE CONTACT], [ADDRESS], [REFUND POLICY]. A lawyer review is on the launch checklist.
 
 ## Open questions
 
-- Phase 6 choices Claude made that the founder should confirm:
-  - Pack pillars: Placement Prep is Career, Home Muscle is Body, Speak Like a Leader is Mind, ₹10K Savings Sprint is Money.
-  - The paywall opens uninvited only once per device, on the first visit after full access ends (not daily).
-  - In reserve mode, founder-price reservations count toward the first 500.
-  - A friend still gets their 7 days when the inviter has used all 5 rewards.
-  - "Repeat sign-ups": an account can be referred only once, at creation. Someone who deletes their account and signs up again with the same email can't be detected without keeping data after deletion; Claude didn't add that. Decide whether to keep a one-way fingerprint of rewarded emails (needs a privacy-policy line).
-  - The paywall lists only built features. War Room joins the list when Phase 8 ships. The Day-90 certificate in `Pass.dc.html` isn't in any phase.
-- The founder asked for "a portfolio as well". Unclear whether that means a personal portfolio website, a GitHub profile set up as a portfolio, or a feature inside EMPIRE OS. Asked twice; not answered yet.
-- Git author name is "Akhil". If the founder wants their full name on commits, run `git config --global user.name "Full Name"`.
+- College HQ choices Claude made: a student is in one batch at a time; leaving deletes the membership (the college stops seeing them, and paid-batch access ends at that moment); the college sees first name plus an optional last-name initial the student types at joining; reminders are allowed only for students who missed 3+ days, one a day; "Mock interviews done" counts finished mock-interview missions (`car-18`, `pp-08`). Does a 30-day paid pilot give students Season Pass? The founder decides per batch with the "Paid batch" box.
+- War Room choices: a review covers the latest finished week and can be done until the next one opens; schedule and budget changes apply from tomorrow like Me edits; the focus pillar takes the third slot every day when it isn't in the top two.
+- Payments: reservation holders keep ₹299 even after 500 founder places are taken; founder places = students with a founder-price reservation or a paid founder-price pass.
+- Phase 6 questions from last session are still open (pack pillars, paywall once per device, reservations counting toward 500, repeat sign-ups fingerprint, Day-90 certificate).
+- The founder asked for "a portfolio as well". Still unclear what that means.
+- AI: the founder offered a Groq key. `docs/PRODUCT.md` keeps V1 free of AI calls ("AI chat coach" is in "Not in V1"). Any AI feature needs the founder's decision and a product-doc change first.
 
 ## Known problems
 
-- `npm run build` prints two harmless warnings: "Failed to find font override values" for Big Shoulders and Big Shoulders Stencil.
+- `npm run build` no longer warns about Big Shoulders fonts (they're local files now).
 - npm skipped the install script of `unrs-resolver` (npm 11's install-scripts allowlist). Lint works without it.
 - Claude can't read `.env.local` (deny rule). `npm run test:rls` reports "Supabase isn't set up yet" until the founder fills it in.
-- The invite link in Me shows as `/r/CODE` for a moment before the page is live, then as the full address.
+- The Supabase versions of the College HQ, War Room, demo and payment store methods compile but haven't run against a real database yet.
+- A guide page under Next.js 16 as a dynamic `[slug]` route hit an internal Next.js error in dev ("instant validation ... bug in Next.js"), so each guide is its own static page using `components/GuideArticle.tsx`.
 
 ## Notes for the next agent
 
-- **Local test mode.** `EMPIRE_TEST_MODE=1` (only when NODE_ENV isn't production) swaps Supabase for an in-memory store (`lib/server/store-memory.ts`) and a pretend sign-in cookie. Playwright runs its own test-mode server on port 3100 with build folder `.next-test` (see `playwright.config.ts`), so `npm run dev` on 3000 stays real. `tests/unit/test-mode.test.ts` proves it's off in production.
-- **Browser events in test mode** go to `app/api/test-event` (POST records, GET lists the signed-in test student's events); 404 outside test mode. The event list is `lib/analytics/events.ts`.
-- **Server logic** lives in `lib/server/*-service.ts` behind the `SeasonStore` interface (`lib/server/store.ts`); `store-supabase.ts` is the real one. Server actions are thin wrappers in `app/actions/` (`growth.ts` for Phase 6). Every action reads the user from the session (`lib/server/session.ts`), never from the browser.
-- **Access:** `fullAccessUntil` in `lib/game/access.ts` follows the trial and back-to-back grants; referral bonuses start when current access ends. Entitlement `source` is unique per user (idempotent grants; inviter rewards are `referral-reward:1` to `:5`).
-- **Prices:** `lib/game/pass.ts` (`PAYMENTS_LIVE = false` until Phase 10). Paywall sources are whitelisted there.
-- **Missions:** `MISSIONS` is the 120 base missions; `LIBRARY` and `LIBRARY_BY_ID` (`lib/plan-engine/library.ts`) add the 40 pack missions. After changing either file run `npm run gen:missions -- <name>` (a unit test checks the newest seed matches).
-- **Share cards:** fonts are static TTFs in `assets/fonts/` (OFL), read by the route at start-up and traced into the build. Card kinds are in `lib/share/kinds.ts` (safe for browser code); don't import `lib/server/*` values into client components.
-- **Time travel:** cookie `empire_time_travel` (whole days), honoured only for the founder role (or in test mode). `lib/server/deps.ts`.
-- **Next.js 16 + Cache Components:** pages that read cookies or the clock render inside `<Suspense>` and call `await connection()` first (see `app/(app)/(tabs)/hq/page.tsx`). Client components that read localStorage use `useHydrated()` (`lib/use-hydrated.ts`). After adding a route, `npm run typecheck` regenerates route types.
-- **Browser tests:** a stamp shows before the server saves; wait for the server action's POST response (`page.waitForResponse`) before checking server data or moving the clock. Next.js keeps the previous screen hidden for instant back, so scope text checks with `getByRole("main")`. Every spec fails on any browser console error; keep that pattern.
-- **Database:** migrations in `supabase/migrations/` (5 files now); `tests/unit/db.test.ts` runs them on PGlite and proves RLS. `lib/supabase/types.ts` is hand-written; keep it in step with migrations.
-- **Shell quirk:** the Bash tool here collapses `\\` to `\` inside commands; write files with backslashes (regexes) with the file tool or a quoted heredoc (`<<'EOF'`), not `node -e` strings.
-- Fonts: `Big_Shoulders` and `Big_Shoulders_Stencil` with `opsz` 72 via the `font-display` and `font-stencil` utilities in `app/globals.css`.
-- `next dev` maintains the Next.js block at the end of `AGENTS.md`; keep it and commit it. It also adds `.next-test` paths to `tsconfig.json`; that's expected.
+- **Local test mode.** `EMPIRE_TEST_MODE=1` swaps Supabase for an in-memory store (`lib/server/store-memory.ts`) and a pretend sign-in. Playwright runs its own server on port 3100 (`.next-test`). The cookie `empire_test_payments=1` turns on a stand-in Razorpay (`lib/server/payments-fake.ts`, `/api/test-pay`), test mode only.
+- **Server logic** lives in `lib/server/*-service.ts` behind `SeasonStore` (`lib/server/store.ts`): `college-service.ts` (+ pure `college-metrics.ts`, `college-sample.ts`), `war-room-service.ts`, `demo-service.ts`, `payment-service.ts` (+ `razorpay.ts`). Actions are thin wrappers in `app/actions/`.
+- **Deps** (`lib/server/deps.ts`): `{ store, now, payments }`. `payments` is the Razorpay gateway when live, else null; services check it.
+- **Season Pass access** = `season_pass` or `batch` entitlements (`isPassLike`, `passCoversDate` in `lib/game/access.ts`).
+- **War Room adjustments** are stored in `weekly_reviews.adjustments` (`ReviewOutcome`) and read by `weekAdjustments()` in `season-service.ts` for the following week.
+- **College HQ pages** are under `app/college/` (desktop layout with side menu, `CollegeShell.tsx`); the student join flow is `app/(app)/(tabs)/me/college/` and `app/(marketing)/join/[code]/`.
+- **Fonts:** Big Shoulders comes from `app/fonts/*.woff2` (made from `assets/fonts` with `subset-font`; see `assets/fonts/README.md`). Schibsted Grotesk still comes from Google via `next/font`.
+- **Images:** `next.config.ts` allows qualities 60 and 75 and serves AVIF first. `/colleges` screenshots are real sample-batch screens; refresh with `MARKETING_SHOTS=1 npx playwright test tests/e2e/marketing-shots.spec.ts`.
+- **Next.js 16:** `priority` on `next/image` is deprecated (use `fetchPriority`/`loading`). `dynamicParams` isn't allowed with Cache Components. Link-preview bots (WhatsApp etc.) get metadata in the first response; browsers get it streamed.
+- **Shell quirk:** the Bash tool collapses `\\` and chokes on apostrophes inside long heredocs; write such files with the file tool.
+- **Browser tests:** wait for the server action's POST response before checking server data; scope text checks with `getByRole("main")`; every spec fails on console errors.
 - GitHub remote `origin` is https://github.com/akhil-itpro/empire-os (private). Push after every commit.
-- UI components live in `components/ui/` and every one is shown on `/styleguide`. Hover styles use the custom `hov:` variant; focus rings are global.
-- Screenshots: `SHOTS_DIR=<folder> npx playwright test tests/e2e/screens.spec.ts` (also the four-card test in `growth.spec.ts` saves the cards), or `node scripts/screenshot.mjs <route-without-slash> 390 <outDir>` against `npm run dev`.
-- If `npm run dev` serves old styles after editing `app/globals.css`, stop it, delete `.next/dev` and start again.

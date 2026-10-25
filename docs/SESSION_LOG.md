@@ -2,6 +2,15 @@
 
 A diary of every working session, newest first. Whoever did the work (Claude or Codex) adds an entry before stopping, through `/handoff`. Where things stand right now is in `HANDOFF.md`.
 
+## 2026-10-25: Claude (Opus 5.5), Phases 7 to 10
+
+- Phase 7 College HQ: org, batch, invite, membership and reminder tables with RLS by organisation; join with consent and leave; paid batches give Season Pass access; overview, students, report, invite and poster pages; founder tools and a labelled sample batch.
+- Phase 8 War Room: weekly review with rules in the plan config, "What changed and why", boss missions, goal or city change after confirmation, Free preview.
+- Phase 9: `/colleges` with real screens and a demo form, two guides, share images, sitemap and robots; local mobile Lighthouse 94 to 96 after trimming the display fonts.
+- Phase 10: Razorpay checkout behind `PAYMENTS_LIVE`, server-verified and idempotent, tested against a stand-in. Fixed a double-tap undo bug on HQ.
+- Commits: `47eb800` to `6cf95be`, then the handoff commit. 195 unit and 57 Playwright tests pass; build passes.
+- Next: the founder's Supabase and Vercel setup, then recheck Phases 2 to 10 on the real database.
+
 ## 2026-10-24 (evening): Claude (Opus 5.5), Phase 6
 
 - Four Season Pass packs (40 phone-only missions), turned on from Path and locked on Free.
