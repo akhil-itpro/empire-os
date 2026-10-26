@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const shots = process.env.SHOTS_DIR;
 async function shot(page: Page, name: string) {
-  if (shots) await page.screenshot({ path: `${shots}/${name}.png`, fullPage: true });
+  if (shots) await page.screenshot({ caret: "initial", path: `${shots}/${name}.png`, fullPage: true });
 }
 
 async function noA11yViolations(page: Page) {

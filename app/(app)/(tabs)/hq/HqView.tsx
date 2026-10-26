@@ -4,11 +4,12 @@ import { Flame } from "lucide-react";
 import { animate, AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   chooseFreePillar,
   completeMission,
   skipMission,
+  startNextSeason,
   swapMission,
   undoMission,
 } from "@/app/actions/season";
@@ -24,18 +25,27 @@ import { OptionTile } from "@/components/ui/OptionTile";
 import { Ticket } from "@/components/ui/Ticket";
 import { cn } from "@/lib/cn";
 import { ACT_NAMES } from "@/lib/game/dates";
-import { MEDALS_BY_ID, type MedalId } from "@/lib/game/medals";
+import { MEDALS, MEDALS_BY_ID, type MedalId } from "@/lib/game/medals";
 import { DAY_COMPLETE_BONUS, type SkipReason } from "@/lib/game/rules";
+import { formatMinutes } from "@/lib/format";
 import { takeUninvitedPaywall } from "@/lib/paywall";
 import { PILLAR_CLASSES, PILLAR_LABEL, PILLARS, type Pillar } from "@/lib/pillars";
-import type { HqData, TicketData } from "@/lib/server/hq";
+import type { HqData, SeasonDebrief as SeasonDebriefData, TicketData } from "@/lib/server/hq";
+import type { BossData } from "@/lib/server/war-room-service";
 import { STREAK_CARD_DAYS, type ShareKind } from "@/lib/share/kinds";
 import { InstallTip } from "./InstallTip";
 import { MissionSheet } from "./MissionSheet";
 import { TrialBanner } from "./TrialBanner";
+import { WarRoomCards, type BossResult } from "./WarRoomCards";
+
+export type WarRoomData = { dueWeek: number | null; boss: BossData | null };
 
 const nf = new Intl.NumberFormat("en-IN");
 const ACT_LABEL = { 1: "Act I", 2: "Act II", 3: "Act III" } as const;
+
+// Keys that restart the +XP and medal animations on each new event.
+let lastKey = 0;
+const nextKey = () => ++lastKey;
 
 const CARD_TITLES: Record<ShareKind, string> = {
   archetype: "Your archetype",
@@ -176,7 +186,69 @@ function DayComplete({ day, missions, streak }: { day: number; missions: TicketD
   );
 }
 
-export function HqView({ data, first, extras }: { data: HqData; first: boolean; extras?: ReactNode }) {
+/** After Day 90: the season in real numbers, then the next one. */
+function SeasonDebrief({
+  data,
+  busy,
+  onStart,
+  onShare,
+}: {
+  data: HqData & { debrief: SeasonDebriefData };
+  busy: boolean;
+  onStart: () => void;
+  onShare: () => void;
+}) {
+  const d = data.debrief;
+  const next = data.seasonNumber + 1;
+  const facts = [
+    { label: "Missions done", value: nf.format(d.missionsDone) },
+    { label: "Time invested", value: formatMinutes(d.minutes) },
+    { label: "Best streak", value: `${d.bestStreak} ${d.bestStreak === 1 ? "day" : "days"}` },
+    { label: "Medals", value: `${d.medals} of ${MEDALS.length}` },
+  ];
+  return (
+    <section className="mx-5 mt-[22px]" aria-labelledby="season-complete">
+      <h1 id="season-complete" className="font-display text-[40px] leading-none font-extrabold">
+        Season {data.seasonNumber} complete
+      </h1>
+      <p className="mt-2 text-[15px] text-moss">90 days as {data.archetypeName}. Every number here is from your own missions.</p>
+      <div className="mt-5 flex items-center gap-[18px]">
+        <Medallion total={90} lit={d.activeDays} size={144}>
+          <span className="text-[40px] leading-none font-bold">{d.activeDays}</span>
+          <span className="mt-1 text-xs leading-tight font-medium text-moss">
+            of 90 days
+            <br />
+            active
+          </span>
+        </Medallion>
+        <dl className="grid min-w-0 flex-1 gap-2">
+          {facts.map((f) => (
+            <div key={f.label}>
+              <dt className="text-xs text-moss">{f.label}</dt>
+              <dd className="text-base font-semibold">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <p className="mt-6 text-[15px] text-bone">
+        Season {next} starts today with your current plan. Your XP, rank and medals come with you.
+      </p>
+      <p className="mt-1.5 text-sm text-moss">
+        {data.fullAccess
+          ? "You have full access, so it starts with three missions a day."
+          : "It runs on Free: one mission a day, in the pillar you pick. Season Pass gives three."}
+      </p>
+      <Button className="mt-5" disabled={busy} onClick={onStart}>
+        Start Season {next}
+      </Button>
+      <Button variant="secondary" className="mt-2.5" onClick={onShare}>
+        Share your season
+      </Button>
+    </section>
+  );
+}
+
+export function HqView({ data, first, warRoom }: { data: HqData; first: boolean; warRoom: WarRoomData }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   // Missions marked done here before the server answers, so the stamp is instant.
@@ -204,6 +276,30 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
 
   const run = (work: () => Promise<void>) => startTransition(work);
 
+  const earnMedals = (ids: MedalId[]) => {
+    if (ids.length === 0) return;
+    setMedalsNow((list) => [...list, ...ids.filter((id) => !list.includes(id))]);
+    setToast({ key: nextKey(), ids });
+  };
+
+  // The weekly boss gets the same feedback as a mission: rising XP, a rank-up moment, its medal.
+  const bossDone = (r: BossResult) => {
+    if (r.xpGained > 0) setGain({ key: nextKey(), xp: r.xpGained });
+    if (r.firstBoss) earnMedals(["boss"]);
+    const rank = r.rankUp;
+    if (rank) setMoments((q) => [...q, { kind: "rank", rank }]);
+  };
+
+  const startNext = () =>
+    run(async () => {
+      const r = await startNextSeason();
+      if (!r.ok) {
+        setMessage(r.message);
+        return;
+      }
+      router.push("/hq?first=1");
+    });
+
   const complete = (m: TicketData) => {
     setOpenId(null);
     setOptimistic((o) => ({ ...o, [m.id]: "done" }));
@@ -214,11 +310,8 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         setMessage(r.message);
         return;
       }
-      if (r.data.xpGained > 0) setGain({ key: Date.now(), xp: r.data.xpGained });
-      if (r.data.medals.length) {
-        setMedalsNow((list) => [...list, ...r.data.medals.filter((id) => !list.includes(id))]);
-        setToast({ key: Date.now(), ids: r.data.medals });
-      }
+      if (r.data.xpGained > 0) setGain({ key: nextKey(), xp: r.data.xpGained });
+      earnMedals(r.data.medals);
       const queued: MomentKind[] = [];
       if (r.data.rankUp) queued.push({ kind: "rank", rank: r.data.rankUp });
       if (r.data.streakMilestone) queued.push({ kind: "streak", days: r.data.streakMilestone });
@@ -290,7 +383,7 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         </p>
       )}
 
-      {data.streak.state === "paused" ? (
+      {data.seasonFinished ? null : data.streak.state === "paused" ? (
         <p className="mx-5 mt-4 rounded-xl border border-rule bg-ledger px-4 py-3 text-sm text-bone">
           Streak paused. Your XP and rank are safe. Go again today.
         </p>
@@ -349,22 +442,24 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
 
       {data.trialEndingSoon ? <TrialBanner /> : null}
 
-      <div className="mx-5 mt-[22px] flex items-baseline justify-between">
-        <h1 className="font-display text-[26px] leading-none font-extrabold">Today&apos;s missions</h1>
-        {missions.length > 0 ? (
-          <span className="text-[13px] text-moss">
-            {doneCount} of {missions.length} done
-          </span>
-        ) : null}
-      </div>
-
-      {data.seasonFinished ? (
-        <div className="mx-5 mt-3">
-          <p className="text-base text-moss">Season {data.seasonNumber} is complete. Well played.</p>
-          <Button variant="secondary" className="mt-4" onClick={() => setShareKind("season")}>
-            Share your season
-          </Button>
+      {data.seasonFinished ? null : (
+        <div className="mx-5 mt-[22px] flex items-baseline justify-between">
+          <h1 className="font-display text-[26px] leading-none font-extrabold">Today&apos;s missions</h1>
+          {missions.length > 0 ? (
+            <span className="text-[13px] text-moss">
+              {doneCount} of {missions.length} done
+            </span>
+          ) : null}
         </div>
+      )}
+
+      {data.seasonFinished && data.debrief ? (
+        <SeasonDebrief
+          data={{ ...data, debrief: data.debrief }}
+          busy={pending}
+          onStart={startNext}
+          onShare={() => setShareKind("season")}
+        />
       ) : missions.length === 0 && !data.fullAccess ? (
         <section className="mx-5 mt-3" aria-label="Pick today's pillar">
           <p className="text-[15px] text-moss">
@@ -462,7 +557,11 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         {toast ? <MedalToast key={toast.key} ids={toast.ids} onDone={hideToast} /> : null}
       </AnimatePresence>
 
-      {extras}
+      <WarRoomCards
+        dueWeek={data.seasonFinished ? null : warRoom.dueWeek}
+        boss={data.seasonFinished ? null : warRoom.boss}
+        onBossDone={bossDone}
+      />
 
       <MissionSheet
         mission={open}

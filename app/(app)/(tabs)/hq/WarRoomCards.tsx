@@ -8,8 +8,19 @@ import { cn } from "@/lib/cn";
 import { PILLAR_CLASSES, PILLAR_LABEL } from "@/lib/pillars";
 import type { BossData } from "@/lib/server/war-room-service";
 
+export type BossResult = { xpGained: number; rankUp: string | null; firstBoss: boolean };
+
 /** HQ: the weekly review when it's due, and this week's boss mission after a strong week. */
-export function WarRoomCards({ dueWeek, boss }: { dueWeek: number | null; boss: BossData | null }) {
+export function WarRoomCards({
+  dueWeek,
+  boss,
+  onBossDone,
+}: {
+  dueWeek: number | null;
+  boss: BossData | null;
+  /** HQ shows the rising XP, a rank-up moment and the medal, as for a mission. */
+  onBossDone?: (result: BossResult) => void;
+}) {
   const [done, setDone] = useState(boss?.done ?? false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -19,11 +30,8 @@ export function WarRoomCards({ dueWeek, boss }: { dueWeek: number | null; boss: 
       const r = await completeBoss();
       if (r.ok) {
         setDone(true);
-        setMessage(
-          r.data.xpGained
-            ? `Boss beaten. +${r.data.xpGained} XP.${r.data.firstBoss ? " Medal earned: Boss beaten." : ""}`
-            : null,
-        );
+        setMessage(r.data.xpGained ? `Boss beaten. +${r.data.xpGained} XP.` : null);
+        onBossDone?.(r.data);
       } else setMessage(r.message);
     });
 

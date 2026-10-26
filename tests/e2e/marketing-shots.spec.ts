@@ -13,14 +13,14 @@ test("College HQ screens for /colleges", async ({ page }) => {
   const overview = page.url();
 
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.screenshot({ path: "public/colleges/college-hq-laptop.png", scale: "css" });
+  await page.screenshot({ caret: "initial", path: "public/colleges/college-hq-laptop.png", scale: "css" });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(overview);
   await page.getByRole("heading", { name: "Need a nudge" }).scrollIntoViewIfNeeded();
-  await page.getByRole("region", { name: "Need a nudge" }).screenshot({ path: "public/colleges/college-hq-nudge.png", scale: "css" });
+  await page.getByRole("region", { name: "Need a nudge" }).screenshot({ caret: "initial", path: "public/colleges/college-hq-nudge.png", scale: "css" });
 
   await page.setViewportSize({ width: 900, height: 1100 });
   await page.goto(`${overview}/report`);
-  await page.getByRole("article", { name: "Weekly report" }).screenshot({ path: "public/colleges/college-hq-report.png", scale: "css" });
+  await page.getByRole("article", { name: "Weekly report" }).screenshot({ caret: "initial", path: "public/colleges/college-hq-report.png", scale: "css" });
 });

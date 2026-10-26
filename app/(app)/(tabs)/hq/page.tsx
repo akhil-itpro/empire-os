@@ -9,7 +9,6 @@ import { getSessionUserId } from "@/lib/server/session";
 import { hqWarRoom } from "@/lib/server/war-room-service";
 import { HqView } from "./HqView";
 import { NudgeBanner } from "./NudgeBanner";
-import { WarRoomCards } from "./WarRoomCards";
 
 export const metadata: Metadata = { title: "HQ", robots: { index: false } };
 
@@ -37,7 +36,7 @@ async function HqContent({ searchParams }: { searchParams: PageProps<"/hq">["sea
       <HqView
         data={result.data}
         first={first}
-        extras={<WarRoomCards dueWeek={result.data.seasonFinished ? null : warRoom.dueWeek} boss={warRoom.boss} />}
+        warRoom={warRoom}
       />
     </>
   );

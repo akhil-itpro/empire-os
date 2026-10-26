@@ -29,6 +29,13 @@ test.describe("trust layer", () => {
     expect(data.profile.firstName).toBe("Rahul");
     expect(data.missions).toHaveLength(3);
     expect(data.xp.length).toBeGreaterThan(0);
+
+    // The button on the page saves the same file and says so.
+    await page.goto("/me/data");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download my data" }).click();
+    expect((await download).suggestedFilename()).toBe("empire-os-my-data.json");
+    await expect(page.getByText("Downloaded: empire-os-my-data.json.")).toBeVisible();
   });
 
   test("the export refuses anyone who isn't signed in", async ({ request }) => {

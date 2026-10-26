@@ -148,4 +148,34 @@ test.describe("the daily loop", () => {
     await expect(page.getByRole("button", { name: /^Mark done:/ })).toHaveCount(1);
     await expect(page.getByText("0 of 1 done")).toBeVisible();
   });
+
+  test("after Day 90, the season debrief leads into Season 2 with XP kept", async ({ page, context }) => {
+    // A real student saw the uninvited paywall once, on day 8; this one skipped ahead.
+    await page.addInitScript(() => localStorage.setItem("empire.paywall.uninvited", "2026-01-01"));
+    await startSeason(page);
+    await page.getByRole("button", { name: /^Mark done:/ }).first().click();
+    await expect(page.getByText("1 of 3 done")).toBeVisible();
+    // Wait for the XP count-up to land before reading it.
+    await expect(page.getByText(/^\d[\d,]* XP$/).first()).not.toHaveText("0 XP");
+    await page.waitForTimeout(800);
+    const xp = await page.getByText(/^\d[\d,]* XP$/).first().textContent();
+
+    await travelDays(context, 91);
+    await page.goto("/hq");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { level: 1, name: "Season 1 complete" })).toBeVisible();
+    await expect(main.getByText(/of 90 days\s*active/)).toBeVisible();
+    await expect(main.getByText("Streak paused", { exact: false })).toHaveCount(0);
+    await expect(main.getByText("It runs on Free: one mission a day, in the pillar you pick.")).toBeVisible();
+    const started = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/hq"));
+    await main.getByRole("button", { name: "Start Season 2" }).click();
+    await started;
+
+    await page.waitForURL(/\/hq\?first=1$/);
+    await expect(main.getByText("Season 2", { exact: true })).toBeVisible();
+    await expect(main.getByText("Day 1", { exact: true })).toBeVisible();
+    // No second free week: Free picks one pillar. XP and rank carry over.
+    await expect(main.getByText(/Pick today's pillar/)).toBeVisible();
+    await expect(page.getByText(/^\d[\d,]* XP$/).first()).toHaveText(xp!);
+  });
 });

@@ -9,6 +9,35 @@ export function DataControls() {
   const [message, setMessage] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [downloading, setDownloading] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState<string | null>(null);
+
+  // Fetch first, so a failure shows a clear message here instead of a broken file.
+  const download = async () => {
+    setDownloading(true);
+    setDownloadMessage(null);
+    try {
+      const res = await fetch("/me/data/export", { cache: "no-store" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        setDownloadMessage(body?.error ?? "We couldn't collect your data just now, so nothing was downloaded. Try again in a minute.");
+        return;
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "empire-os-my-data.json";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setDownloadMessage("Downloaded: empire-os-my-data.json.");
+    } catch {
+      setDownloadMessage("You seem to be offline, so nothing was downloaded. Try again when you're connected.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (deleted) {
     return (
@@ -31,13 +60,12 @@ export function DataControls() {
           Download my data
         </h2>
         <p className="mt-2 text-[15px] text-moss">A JSON file with your profile, missions, XP, journal and everything else linked to you.</p>
-        <a
-          href="/me/data/export"
-          download
-          className="mt-4 flex h-13 w-full items-center justify-center rounded-xl border-[1.5px] border-brass-deep text-base font-semibold text-bone hov:border-brass hov:bg-raised"
-        >
-          Download my data
-        </a>
+        <Button variant="secondary" className="mt-4" disabled={downloading} onClick={download}>
+          {downloading ? "Collecting your data…" : "Download my data"}
+        </Button>
+        <p className="mt-2 min-h-5 text-sm text-bone" role="status" aria-live="polite">
+          {downloadMessage}
+        </p>
       </section>
 
       <section className="mt-10" aria-labelledby="delete">
