@@ -168,6 +168,13 @@ describe("data rules", () => {
     ).rejects.toThrow(/duplicate key/);
   });
 
+  it("lets the server start a new season and log it (Season 2)", async () => {
+    await db.query(`update public.profiles set season_number = 2, season_start = current_date where id = '${A}' and season_number = 1`);
+    await db.query(`insert into public.events (name, user_id, props) values ('season_start', '${A}', '{"season": 2}')`);
+    const { rows } = await db.query<{ season_number: number }>(`select season_number from public.profiles where id = '${A}'`);
+    expect(rows[0].season_number).toBe(2);
+  });
+
   it("allows only the four known packs", async () => {
     await expect(db.query(`update public.profiles set active_packs = array['made_up'] where id = '${A}'`)).rejects.toThrow(/active_packs_check/);
     await db.query(`update public.profiles set active_packs = array['home_muscle', 'savings_sprint'] where id = '${A}'`);

@@ -18,6 +18,7 @@ const snapshot: FounderSnapshot = {
     { name: "paywall_view", userId: "a", anonId: null, props: { source: "locked_week" }, at: at("2026-10-08") },
     { name: "paywall_view", userId: "b", anonId: null, props: { source: "locked_week" }, at: at("2026-10-08") },
     { name: "landing_view", userId: null, anonId: "old", props: {}, at: at("2026-09-01") },
+    { name: "season_start", userId: "c", anonId: null, props: { season: 2 }, at: at("2026-10-09") },
   ],
   missions: [
     { userId: "a", localDate: "2026-10-02", pillar: "career", missionId: "car-01", status: "done", skipReason: null },
@@ -53,6 +54,10 @@ describe("Founder HQ metrics", () => {
     expect(m.mostSkipped).toEqual([{ missionId: "min-01", skips: 2, reasons: { too_hard: 1, no_time: 1 } }]);
     expect(m.paywallBySource).toEqual([{ source: "locked_week", views: 2 }]);
     expect(m.missionsByPillar).toEqual({ career: 1, body: 1, mind: 0, money: 0 });
+  });
+
+  it("counts students who started their next season", () => {
+    expect(m.nextSeasons).toBe(1);
   });
 
   it("keeps the launch checklist in step with its migration", () => {

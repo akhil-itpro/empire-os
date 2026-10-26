@@ -11,7 +11,8 @@ import { PILLARS, type Pillar } from "@/lib/pillars";
 import { depsFor } from "@/lib/server/deps";
 import { loadMedals } from "@/lib/server/medal-service";
 import { getSessionUserId } from "@/lib/server/session";
-import { formatMinutes, loadStats } from "@/lib/server/stats";
+import { formatMinutes } from "@/lib/format";
+import { loadStats } from "@/lib/server/stats";
 
 export const metadata: Metadata = { title: "Stats", robots: { index: false } };
 

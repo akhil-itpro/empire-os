@@ -7,6 +7,7 @@ import {
   chooseFreePillar as chooseFreePillarService,
   completeMission as completeMissionService,
   skipMission as skipMissionService,
+  startNextSeason as startNextSeasonService,
   startSeason as startSeasonService,
   swapMission as swapMissionService,
   undoMission as undoMissionService,
@@ -59,4 +60,8 @@ export async function swapMission(missionId: unknown) {
 
 export async function chooseFreePillar(pillar: unknown) {
   return withUser((deps, userId) => chooseFreePillarService(deps, userId, pillar));
+}
+
+export async function startNextSeason() {
+  return withUser((deps, userId) => startNextSeasonService(deps, userId));
 }

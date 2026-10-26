@@ -22,6 +22,7 @@ import { PILLARS, type Pillar } from "@/lib/pillars";
 import { answersSchema, type Answers } from "@/lib/plan-engine/answers";
 import { archetypeFor } from "@/lib/plan-engine/archetype";
 import { PLAN_CONFIG } from "@/lib/plan-engine/config";
+import { PREVIEW_TIE_BREAK } from "@/lib/plan-engine/preview";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import type { Mission } from "@/lib/plan-engine/missions";
 import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
@@ -222,9 +223,11 @@ export async function ensureToday(deps: Deps, userId: string): Promise<Result<To
     return { ok: true, data: state };
   }
 
+  // Season 1, Day 1 breaks ties like the reveal's preview, so it gets exactly the
+  // missions the reveal described. Every other day breaks them per student and date.
+  const tieBreak = profile.seasonNumber === 1 && state.day === 1 ? PREVIEW_TIE_BREAK : { seed: userId, date: state.today };
   const picked = selectDailyMissions(deps.library ?? LIBRARY, {
-    seed: userId,
-    date: state.today,
+    ...tieBreak,
     seasonDay: state.day,
     week: state.week,
     act: state.act,
@@ -236,6 +239,33 @@ export async function ensureToday(deps: Deps, userId: string): Promise<Result<To
   });
   await deps.store.insertMissions(picked.map((p) => toRow(userId, state.today, p.slot, p.mission)));
   return { ok: true, data: await loadToday(deps, profile, entitlements) };
+}
+
+/**
+ * After Day 90: the next season starts today with the same plan settings
+ * (docs/PRODUCT.md section 5). XP, rank, medals and history stay. There is no
+ * second free week: access is whatever the student has now (Free or Season Pass).
+ */
+export async function startNextSeason(deps: Deps, userId: string): Promise<Result<{ seasonNumber: number }>> {
+  const profile = await deps.store.getProfile(userId);
+  if (!profile) return fail("not_started", "Start your season first.");
+  const today = localDate(deps.now, profile.timeZone);
+  if (!seasonPosition(profile.seasonStart, today).finished) {
+    // A second tap, or a second tab, after the new season started today: already done.
+    if (profile.seasonNumber > 1 && profile.seasonStart === today) {
+      return { ok: true, data: { seasonNumber: profile.seasonNumber } };
+    }
+    return fail("not_allowed", `Season ${profile.seasonNumber} is still running. The next one opens after Day 90.`);
+  }
+  const next = profile.seasonNumber + 1;
+  if (await deps.store.startNewSeason(userId, profile.seasonNumber, next, today)) {
+    await deps.store.logEvent("season_start", userId, { season: next });
+  }
+  // Day 1's missions, and the streak and stats on the new season's weeks.
+  const started = await ensureToday(deps, userId);
+  if (!started.ok) return started;
+  await recomputeStats(deps, userId);
+  return { ok: true, data: { seasonNumber: started.data.profile.seasonNumber } };
 }
 
 /** Free plan after the trial: one mission a day, in the pillar the student picks. */

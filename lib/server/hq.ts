@@ -2,6 +2,8 @@ import "server-only";
 import { hasSeasonPass, passCoversDate, showTrialEndingBanner } from "@/lib/game/access";
 import { addDays, seasonPosition } from "@/lib/game/dates";
 import { empireScore, pillarScores } from "@/lib/game/score";
+import { earnedMedals } from "@/lib/game/medals";
+import { SEASON_DAYS } from "@/lib/game/rules";
 import { computeStreak, type StreakState } from "@/lib/game/streak";
 import { rankFor, type RankProgress } from "@/lib/game/xp";
 import type { Pillar } from "@/lib/pillars";
@@ -9,7 +11,8 @@ import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { selectDailyMissions } from "@/lib/plan-engine/select";
 import { WEEK_THEMES } from "@/lib/plan-engine/week-themes";
-import { ensureToday, packContext, packNameOf, settingsOn, weekAdjustments, type Deps, type Result } from "./season-service";
+import { medalInput } from "./medal-service";
+import { ensureToday, packContext, packNameOf, settingsOn, weekAdjustments, type Deps, type Result, type Today } from "./season-service";
 import type { MissionStatus, ShareName } from "./store";
 
 export type TicketData = {
@@ -51,7 +54,37 @@ export type HqData = {
   pillars: Record<Pillar, number | null>;
   dayComplete: boolean;
   tomorrow: { title: string; pillar: Pillar; minutes: number } | null;
+  /** After Day 90: the finished season in numbers, all from the student's own rows. */
+  debrief: SeasonDebrief | null;
 };
+
+export type SeasonDebrief = {
+  /** Days of the 90 with at least one mission done. */
+  activeDays: number;
+  missionsDone: number;
+  minutes: number;
+  /** The longest run of days in a row inside this season. */
+  bestStreak: number;
+  /** Medals earned so far (they're kept across seasons). */
+  medals: number;
+};
+
+async function seasonDebrief(deps: Deps, profile: Today["profile"], hasShieldOn: (d: string) => boolean): Promise<SeasonDebrief> {
+  const end = addDays(profile.seasonStart, SEASON_DAYS - 1);
+  const [season, medals] = await Promise.all([
+    deps.store.listMissions(profile.id, profile.seasonStart, end),
+    medalInput(deps, profile),
+  ]);
+  const done = season.filter((m) => m.status === "done");
+  const days = [...new Set(done.map((m) => m.localDate))];
+  return {
+    activeDays: days.length,
+    missionsDone: done.length,
+    minutes: done.reduce((sum, m) => sum + m.minutes, 0),
+    bestStreak: computeStreak({ activeDays: days, today: end, seasonStart: profile.seasonStart, hasShieldOn }).best,
+    medals: earnedMedals(medals).size,
+  };
+}
 
 export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>> {
   const todayResult = await ensureToday(deps, userId);
@@ -147,6 +180,7 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
       pillars: pillarScores(counted, t.today),
       dayComplete,
       tomorrow,
+      debrief: t.seasonFinished ? await seasonDebrief(deps, t.profile, passCoversDate(entitlements, tz)) : null,
     },
   };
 }

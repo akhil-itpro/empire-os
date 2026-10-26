@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { addDays } from "@/lib/game/dates";
 import type { Answers } from "@/lib/plan-engine/answers";
+import { previewPlan } from "@/lib/plan-engine/preview";
 import {
   chooseFreePillar,
   completeMission,
@@ -7,6 +9,7 @@ import {
   loadPacks,
   setPack,
   skipMission,
+  startNextSeason,
   startSeason,
   swapMission,
   undoMission,
@@ -315,5 +318,50 @@ describe("packs", () => {
     await completeMission(deps(at(1)), ALICE, packMission.id);
     const packs = await loadPacks(deps(at(1)), ALICE);
     expect(packs.ok && packs.data.packs.find((p) => p.id === "placement_prep")).toEqual({ id: "placement_prep", on: true, done: 1 });
+  });
+});
+
+describe("Day 1 and the reveal", () => {
+  it("gives Season 1, Day 1 exactly the missions the reveal previewed", async () => {
+    await start();
+    const preview = previewPlan(answers).sampleMissions.map((m) => m.id);
+    expect((await today()).missions.map((m) => m.missionId)).toEqual(preview);
+  });
+});
+
+describe("startNextSeason", () => {
+  it("waits until Day 90 is over", async () => {
+    await start();
+    expect(await startNextSeason(deps(at(89)), ALICE)).toMatchObject({ ok: false, error: "not_allowed" });
+    expect(store.profiles.get(ALICE)!.seasonNumber).toBe(1);
+  });
+
+  it("starts Season 2 today, keeps XP, gives no second free week, and runs once", async () => {
+    await start();
+    const [m] = (await today()).missions;
+    await completeMission(deps(), ALICE, m.id);
+    const xp = await store.xpTotal(ALICE);
+
+    expect(await startNextSeason(deps(at(95)), ALICE)).toMatchObject({ ok: true, data: { seasonNumber: 2 } });
+    const t = await today(ALICE, at(95));
+    expect(t.profile).toMatchObject({ seasonNumber: 2, seasonStart: addDays("2026-11-01", 95) });
+    expect(t).toMatchObject({ day: 1, week: 1, seasonFinished: false, fullAccess: false });
+    expect(t.missions).toHaveLength(0);
+    expect(await store.xpTotal(ALICE)).toBe(xp);
+
+    // A second tap (or tab) changes nothing.
+    expect(await startNextSeason(deps(at(95)), ALICE)).toMatchObject({ ok: true, data: { seasonNumber: 2 } });
+    expect(store.events.filter((e) => e.name === "season_start")).toHaveLength(1);
+    // Founder HQ still dates the sign-up to the first day, not the new season.
+    expect((await store.founderSnapshot("2026-10-01")).signups).toEqual([{ userId: ALICE, signupDate: "2026-11-01" }]);
+  });
+
+  it("gives a Season Pass holder three missions on the new Day 1", async () => {
+    await start();
+    store.grants.push({ userId: ALICE, kind: "season_pass", startsAt: at(80), endsAt: at(170) });
+    await startNextSeason(deps(at(91)), ALICE);
+    const t = await today(ALICE, at(91));
+    expect(t).toMatchObject({ day: 1, fullAccess: true });
+    expect(t.missions).toHaveLength(3);
   });
 });

@@ -2,6 +2,7 @@
 // It mirrors the database rules that matter: one live mission per slot per day,
 // and one XP grant per kind + ref.
 import type { Entitlement, NewEntitlement } from "@/lib/game/access";
+import type { LocalDate } from "@/lib/game/dates";
 import type { PackId } from "@/lib/plan-engine/packs";
 import { LAUNCH_ITEMS, type ChecklistItem, type FounderSnapshot } from "./founder";
 import type {
@@ -51,6 +52,8 @@ const reviewOut = (r: WeeklyReview): WeeklyReview =>
 
 export class MemoryStore implements SeasonStore {
   profiles = new Map<string, Profile>();
+  /** The local date each profile was created (the database's created_at), for Founder HQ. */
+  signups = new Map<string, LocalDate>();
   missions: UserMission[] = [];
   xp: { userId: string; kind: XpKind; ref: string; xp: number }[] = [];
   stats = new Map<string, StatsRow>();
@@ -75,6 +78,7 @@ export class MemoryStore implements SeasonStore {
 
   async insertProfile(p: NewProfile) {
     if (this.profiles.has(p.id)) return "exists" as const;
+    this.signups.set(p.id, p.seasonStart);
     this.profiles.set(p.id, {
       id: p.id,
       firstName: p.firstName,
@@ -274,6 +278,13 @@ export class MemoryStore implements SeasonStore {
     });
   }
 
+  async startNewSeason(userId: string, from: number, to: number, start: string) {
+    const p = this.profiles.get(userId);
+    if (!p || p.seasonNumber !== from) return false;
+    this.profiles.set(userId, { ...p, seasonNumber: to, seasonStart: start });
+    return true;
+  }
+
   async listJournal(userId: string, from: string, to: string) {
     return this.journal
       .filter((j) => j.userId === userId && j.localDate >= from && j.localDate <= to)
@@ -305,6 +316,7 @@ export class MemoryStore implements SeasonStore {
 
   async deleteUser(userId: string) {
     this.profiles.delete(userId);
+    this.signups.delete(userId);
     this.stats.delete(userId);
     this.founders.delete(userId);
     this.missions = this.missions.filter((m) => m.userId !== userId);
@@ -328,9 +340,10 @@ export class MemoryStore implements SeasonStore {
 
   async founderSnapshot(since: string): Promise<FounderSnapshot> {
     return {
-      signups: [...this.profiles.values()]
-        .filter((p) => p.seasonStart >= since)
-        .map((p) => ({ userId: p.id, signupDate: p.seasonStart })),
+      // The sign-up date, not the season start: a new season isn't a new sign-up.
+      signups: [...this.signups]
+        .filter(([id, date]) => this.profiles.has(id) && date >= since)
+        .map(([userId, signupDate]) => ({ userId, signupDate })),
       events: this.events.map((e) => ({ name: e.name, userId: e.userId || null, anonId: null, props: e.props ?? {}, at: e.at })),
       missions: this.missions
         .filter((m) => m.localDate >= since)

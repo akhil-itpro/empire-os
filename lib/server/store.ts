@@ -27,6 +27,7 @@ export type EventName =
   | "checkout_start"
   | "payment_done"
   | "payment_failed"
+  | "season_start"
   // Browser events, logged by the server only in local test mode (see app/api/test-event).
   | ClientEvent;
 
@@ -255,6 +256,11 @@ export interface SeasonStore {
   savePendingSettings(userId: string, settings: PendingSettings, from: LocalDate): Promise<void>;
   /** Makes pending settings the current ones and clears them. */
   commitPendingSettings(userId: string): Promise<void>;
+  /**
+   * Moves the student from season `from` to `to`, starting on `start`. False when the
+   * season number had already moved (a second tap or a second tab), so it runs once.
+   */
+  startNewSeason(userId: string, from: number, to: number, start: LocalDate): Promise<boolean>;
 
   /** The private one-line journal. */
   listJournal(userId: string, from: LocalDate, to: LocalDate): Promise<{ localDate: LocalDate; body: string }[]>;

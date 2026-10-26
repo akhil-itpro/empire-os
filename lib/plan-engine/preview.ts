@@ -33,12 +33,17 @@ const ENEMY_LINE: Record<Answers["enemy"], string> = {
   overthinking: "Overthinking is your biggest enemy, so focus missions get priority.",
 };
 
+/**
+ * The tie-breaks the preview uses. Season 1, Day 1 uses the same ones, so the
+ * missions a student gets on Day 1 are exactly the ones the reveal described.
+ */
+export const PREVIEW_TIE_BREAK = { seed: "preview", date: "2000-01-01" } as const;
+
 export function previewPlan(answers: Answers): PlanPreview {
   const archetypeId = archetypeFor(answers.goal);
   const archetype = ARCHETYPE_INFO[archetypeId];
   const selected = selectDailyMissions(MISSIONS, {
-    seed: "preview",
-    date: "2000-01-01",
+    ...PREVIEW_TIE_BREAK,
     seasonDay: 1,
     week: 1,
     act: 1,

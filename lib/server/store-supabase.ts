@@ -5,7 +5,7 @@ import type { Pillar } from "@/lib/pillars";
 import type { Answers } from "@/lib/plan-engine/answers";
 import type { Archetype } from "@/lib/plan-engine/missions";
 import { isPackId, type PackId } from "@/lib/plan-engine/packs";
-import { addDays } from "@/lib/game/dates";
+import { addDays, localDate } from "@/lib/game/dates";
 import type { BatchMemberRow, BatchRow, Database, NudgeRow, PaymentRow, ProfileRow, UserMissionRow } from "@/lib/supabase/types";
 import type { ChecklistItem, FounderSnapshot } from "./founder";
 import type {
@@ -471,6 +471,18 @@ export class SupabaseSeasonStore implements SeasonStore {
     if (error) fail("commitPendingSettings", error);
   }
 
+  async startNewSeason(userId: string, from: number, to: number, start: string) {
+    // Only moves from the expected season, so a second tap updates nothing.
+    const { data, error } = await this.db
+      .from("profiles")
+      .update({ season_number: to, season_start: start, updated_at: new Date().toISOString() })
+      .eq("id", userId)
+      .eq("season_number", from)
+      .select("id");
+    if (error) fail("startNewSeason", error);
+    return (data ?? []).length > 0;
+  }
+
   async listJournal(userId: string, from: string, to: string) {
     const { data, error } = await this.db
       .from("journal_entries")
@@ -491,30 +503,49 @@ export class SupabaseSeasonStore implements SeasonStore {
   }
 
   async exportUser(userId: string) {
-    const by = async (table: "profiles" | "user_stats", column: string) =>
-      (await this.db.from(table).select("*").eq(column, userId)).data ?? [];
-    const own = async (
+    // Any failed query throws, so the student gets an error, never a file with
+    // sections silently missing (the route turns the throw into a clear message).
+    const rows = async <T>(what: string, query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>) => {
+      const { data, error } = await query;
+      if (error) fail(`exportUser ${what}`, error);
+      return data ?? [];
+    };
+    const own = (
       table: "user_missions" | "xp_events" | "entitlements" | "weekly_reviews" | "journal_entries" | "reservations" | "payments",
-    ) => (await this.db.from(table).select("*").eq("user_id", userId)).data ?? [];
-    const { data: login } = await this.db.auth.admin.getUserById(userId);
-    const referrals =
-      (await this.db.from("referrals").select("*").or(`referrer_id.eq.${userId},referred_id.eq.${userId}`)).data ?? [];
-    const events = (await this.db.from("events").select("name, props, created_at").eq("user_id", userId)).data ?? [];
+    ) => rows(table, this.db.from(table).select("*").eq("user_id", userId));
+    const { data: login, error: loginError } = await this.db.auth.admin.getUserById(userId);
+    if (loginError) fail("exportUser login", loginError);
+    const [profile, stats, missions, xp, entitlements, weeklyReviews, journal, reservations, payments, referrals, events, membership, nudges] =
+      await Promise.all([
+        rows("profiles", this.db.from("profiles").select("*").eq("id", userId)),
+        rows("user_stats", this.db.from("user_stats").select("*").eq("user_id", userId)),
+        own("user_missions"),
+        own("xp_events"),
+        own("entitlements"),
+        own("weekly_reviews"),
+        own("journal_entries"),
+        own("reservations"),
+        own("payments"),
+        rows("referrals", this.db.from("referrals").select("*").or(`referrer_id.eq.${userId},referred_id.eq.${userId}`)),
+        rows("events", this.db.from("events").select("name, props, created_at").eq("user_id", userId)),
+        rows("batch_members", this.db.from("batch_members").select("*").eq("user_id", userId)),
+        rows("nudges", this.db.from("nudges").select("batch_id, local_date, seen_at, created_at").eq("user_id", userId)),
+      ]);
     return {
       login: login.user ? { email: login.user.email, created_at: login.user.created_at } : null,
-      profile: (await by("profiles", "id"))[0] ?? null,
-      stats: (await by("user_stats", "user_id"))[0] ?? null,
-      missions: await own("user_missions"),
-      xp: await own("xp_events"),
-      entitlements: await own("entitlements"),
-      weekly_reviews: await own("weekly_reviews"),
-      journal: await own("journal_entries"),
-      reservations: await own("reservations"),
-      payments: await own("payments"),
+      profile: profile[0] ?? null,
+      stats: stats[0] ?? null,
+      missions,
+      xp,
+      entitlements,
+      weekly_reviews: weeklyReviews,
+      journal,
+      reservations,
+      payments,
       referrals,
       events,
-      batch_membership: (await this.db.from("batch_members").select("*").eq("user_id", userId)).data ?? [],
-      nudges: (await this.db.from("nudges").select("batch_id, local_date, seen_at, created_at").eq("user_id", userId)).data ?? [],
+      batch_membership: membership,
+      nudges,
     };
   }
 
@@ -534,7 +565,9 @@ export class SupabaseSeasonStore implements SeasonStore {
     // Early-stage sizes; move these to SQL views once there are tens of thousands of rows.
     const cohortStart = addDays(since, -31);
     const [profiles, events, missions, reservations, referrals] = await Promise.all([
-      this.db.from("profiles").select("id, season_start").gte("season_start", cohortStart),
+      // Sign-ups by when the profile was created (a day early, then exact in each time zone):
+      // season_start moves when a new season starts, so it is not a sign-up date.
+      this.db.from("profiles").select("id, created_at, time_zone").gte("created_at", `${addDays(cohortStart, -1)}T00:00:00Z`),
       this.db.from("events").select("name, user_id, anon_id, props, created_at").gte("created_at", `${since}T00:00:00Z`).limit(50000),
       this.db.from("user_missions").select("user_id, local_date, pillar, mission_id, status, skip_reason").gte("local_date", cohortStart).limit(100000),
       this.db.from("reservations").select("founder_price"),
@@ -544,9 +577,11 @@ export class SupabaseSeasonStore implements SeasonStore {
         .neq("status", "blocked")
         .gte("created_at", `${since}T00:00:00Z`),
     ]);
-    for (const r of [profiles, events, missions, reservations]) if (r.error) fail("founderSnapshot", r.error);
+    for (const r of [profiles, events, missions, reservations, referrals]) if (r.error) fail("founderSnapshot", r.error);
     return {
-      signups: (profiles.data ?? []).map((p) => ({ userId: p.id, signupDate: p.season_start })),
+      signups: (profiles.data ?? [])
+        .map((p) => ({ userId: p.id, signupDate: localDate(new Date(p.created_at), p.time_zone) }))
+        .filter((s) => s.signupDate >= cohortStart),
       events: (events.data ?? []).map((e) => ({ name: e.name, userId: e.user_id, anonId: e.anon_id, props: e.props ?? {}, at: new Date(e.created_at) })),
       missions: (missions.data ?? []).map((m) => ({
         userId: m.user_id,
