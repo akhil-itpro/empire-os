@@ -19,7 +19,11 @@ export function WarRoomCards({ dueWeek, boss }: { dueWeek: number | null; boss: 
       const r = await completeBoss();
       if (r.ok) {
         setDone(true);
-        setMessage(r.data.xpGained ? `Boss beaten. +${r.data.xpGained} XP.` : null);
+        setMessage(
+          r.data.xpGained
+            ? `Boss beaten. +${r.data.xpGained} XP.${r.data.firstBoss ? " Medal earned: Boss beaten." : ""}`
+            : null,
+        );
       } else setMessage(r.message);
     });
 

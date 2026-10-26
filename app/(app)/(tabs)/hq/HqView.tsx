@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, Flame } from "lucide-react";
-import { animate, useReducedMotion } from "motion/react";
+import { Flame } from "lucide-react";
+import { animate, AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   chooseFreePillar,
   completeMission,
@@ -17,12 +17,15 @@ import { ShareSheet } from "@/components/ShareSheet";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { RankIcon } from "@/components/ui/icons";
+import { MEDAL_TICKS, MedalBadge } from "@/components/ui/MedalBadge";
 import { Medallion } from "@/components/ui/Medallion";
 import { Meter } from "@/components/ui/Meter";
 import { OptionTile } from "@/components/ui/OptionTile";
 import { Ticket } from "@/components/ui/Ticket";
 import { cn } from "@/lib/cn";
-import type { SkipReason } from "@/lib/game/rules";
+import { ACT_NAMES } from "@/lib/game/dates";
+import { MEDALS_BY_ID, type MedalId } from "@/lib/game/medals";
+import { DAY_COMPLETE_BONUS, type SkipReason } from "@/lib/game/rules";
 import { takeUninvitedPaywall } from "@/lib/paywall";
 import { PILLAR_CLASSES, PILLAR_LABEL, PILLARS, type Pillar } from "@/lib/pillars";
 import type { HqData, TicketData } from "@/lib/server/hq";
@@ -32,6 +35,7 @@ import { MissionSheet } from "./MissionSheet";
 import { TrialBanner } from "./TrialBanner";
 
 const nf = new Intl.NumberFormat("en-IN");
+const ACT_LABEL = { 1: "Act I", 2: "Act II", 3: "Act III" } as const;
 
 const CARD_TITLES: Record<ShareKind, string> = {
   archetype: "Your archetype",
@@ -76,6 +80,102 @@ function useCountUp(value: number) {
   return reduceMotion ? value : shown;
 }
 
+/** Lights a new medal's ring tick by tick (all at once with reduced motion). */
+function useLightUp(total: number) {
+  const reduceMotion = useReducedMotion();
+  const [lit, setLit] = useState(0);
+  useEffect(() => {
+    if (reduceMotion) return;
+    const controls = animate(0, total, { duration: 0.7, ease: "easeOut", onUpdate: (v) => setLit(Math.round(v)) });
+    return () => controls.stop();
+  }, [total, reduceMotion]);
+  return reduceMotion ? total : lit;
+}
+
+function MedalEarned({ id }: { id: MedalId }) {
+  const medal = MEDALS_BY_ID.get(id)!;
+  const lit = useLightUp(MEDAL_TICKS);
+  return (
+    <div className="flex items-center gap-3.5 rounded-xl border border-rule bg-ledger px-4 py-3">
+      <MedalBadge id={id} earned lit={lit} size={56} />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-moss">Medal earned</p>
+        <p className="text-base font-semibold">{medal.name}</p>
+        <p className="text-[13px] text-moss">{medal.how}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A short note above the bottom bar when medals are earned, since the cards that
+ * record them sit below the missions. Visual only and tap-through: it never covers
+ * a button, and screen readers hear the cards' live region instead.
+ */
+function MedalToast({ ids, onDone }: { ids: MedalId[]; onDone: () => void }) {
+  const reduceMotion = useReducedMotion();
+  useEffect(() => {
+    const t = setTimeout(onDone, 3500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  const names = ids.map((id) => MEDALS_BY_ID.get(id)!.name);
+  return (
+    <motion.div
+      aria-hidden="true"
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom))] z-20 mx-auto w-[calc(100%-40px)] max-w-[440px]"
+    >
+      <div className="flex items-center gap-3 rounded-xl border-[1.5px] border-brass bg-raised px-3.5 py-2.5">
+        <MedalBadge id={ids[0]} earned size={40} />
+        <p className="text-sm">
+          <span className="text-moss">{names.length === 1 ? "Medal earned: " : "Medals earned: "}</span>
+          <span className="font-semibold">{names.join(" and ")}</span>
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+/** Today's missions all done: a ticket with the day, the bonus, the streak and the XP earned. */
+function DayComplete({ day, missions, streak }: { day: number; missions: TicketData[]; streak: number }) {
+  const reduceMotion = useReducedMotion();
+  const xp = missions.reduce((sum, m) => sum + (m.status === "done" ? m.xp : 0), 0) + DAY_COMPLETE_BONUS;
+  const count = missions.length === 3 ? "All three missions" : missions.length === 1 ? "Today's mission" : `All ${missions.length} missions`;
+  return (
+    <motion.section
+      aria-labelledby="day-complete"
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      className="relative flex min-h-[104px] rounded-xl border-[1.5px] border-brass bg-ledger [--notch:var(--color-field)]"
+    >
+      <div className="flex min-w-0 flex-1 flex-col justify-center py-3.5 pr-3 pl-4">
+        <h2 id="day-complete" className="font-display text-[26px] leading-none font-extrabold">
+          Day {day} complete
+        </h2>
+        <p className="mt-1.5 text-sm text-moss">
+          {count} done. Bonus +{DAY_COMPLETE_BONUS} XP.
+        </p>
+        {streak >= 2 ? (
+          <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold">
+            <Flame size={16} strokeWidth={1.9} className="text-brass" aria-hidden="true" />
+            {streak} days in a row
+          </p>
+        ) : null}
+      </div>
+      <div className="relative flex w-[92px] flex-none flex-col items-center justify-center border-l-2 border-dashed border-rule">
+        <span className="absolute -top-[9.5px] -left-[9px] size-4 rounded-full bg-(--notch)" />
+        <span className="absolute -bottom-[9.5px] -left-[9px] size-4 rounded-full bg-(--notch)" />
+        <span className="text-xl font-bold text-brass">+{xp}</span>
+        <span className="text-center text-xs leading-tight font-semibold text-moss">XP with bonus</span>
+      </div>
+    </motion.section>
+  );
+}
+
 export function HqView({ data, first, extras }: { data: HqData; first: boolean; extras?: ReactNode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -85,6 +185,12 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
   const [moments, setMoments] = useState<MomentKind[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [shareKind, setShareKind] = useState<ShareKind | null>(null);
+  // The "+45" that rises next to the XP total, and medals earned on this visit.
+  const [gain, setGain] = useState<{ key: number; xp: number } | null>(null);
+  const [medalsNow, setMedalsNow] = useState<MedalId[]>([]);
+  const [toast, setToast] = useState<{ key: number; ids: MedalId[] } | null>(null);
+  const hideToast = useCallback(() => setToast(null), []);
+  const reduceMotion = useReducedMotion();
 
   const missions = data.missions.map((m) => (optimistic[m.id] ? { ...m, status: optimistic[m.id] } : m));
   const doneCount = missions.filter((m) => m.status === "done").length;
@@ -107,6 +213,11 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
       if (!r.ok) {
         setMessage(r.message);
         return;
+      }
+      if (r.data.xpGained > 0) setGain({ key: Date.now(), xp: r.data.xpGained });
+      if (r.data.medals.length) {
+        setMedalsNow((list) => [...list, ...r.data.medals.filter((id) => !list.includes(id))]);
+        setToast({ key: Date.now(), ids: r.data.medals });
       }
       const queued: MomentKind[] = [];
       if (r.data.rankUp) queued.push({ kind: "rank", rank: r.data.rankUp });
@@ -172,9 +283,21 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         </div>
       </header>
 
+      {data.seasonFinished ? null : (
+        <p className="mx-5 mt-2.5 text-[13px] text-moss">
+          Week {data.week} of 13: <span className="font-semibold text-bone">{data.weekTheme}</span>. {ACT_LABEL[data.act]},{" "}
+          {ACT_NAMES[data.act]}.
+        </p>
+      )}
+
       {data.streak.state === "paused" ? (
         <p className="mx-5 mt-4 rounded-xl border border-rule bg-ledger px-4 py-3 text-sm text-bone">
           Streak paused. Your XP and rank are safe. Go again today.
+        </p>
+      ) : data.streak.state === "alive" && doneCount === 0 && !data.seasonFinished ? (
+        <p className="mx-5 mt-4 flex items-center gap-2 text-sm text-bone">
+          <Flame size={16} strokeWidth={1.9} className="flex-none text-brass" aria-hidden="true" />
+          One mission today makes it {data.streak.current + 1} days in a row.
         </p>
       ) : null}
 
@@ -200,8 +323,22 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
 
       <section className="mx-5 mt-5" aria-label="XP">
         <div className="flex items-baseline justify-between">
-          <span className="text-[15px] font-bold" aria-live="polite">
-            {nf.format(xpShown)} XP
+          <span className="flex items-baseline gap-2">
+            <span className="text-[15px] font-bold" aria-live="polite">
+              {nf.format(xpShown)} XP
+            </span>
+            {gain && !reduceMotion ? (
+              <motion.span
+                key={gain.key}
+                aria-hidden="true"
+                className="text-[15px] font-bold text-brass"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [8, 0, 0, -6] }}
+                transition={{ duration: 1.6, times: [0, 0.15, 0.7, 1], ease: "easeOut" }}
+              >
+                +{gain.xp}
+              </motion.span>
+            ) : null}
           </span>
           <span className="text-[13px] text-moss">
             {data.rank.next ? `${nf.format(data.rank.toNext)} XP to ${data.rank.next}` : "Top rank reached"}
@@ -287,10 +424,7 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
 
       {data.dayComplete ? (
         <div className="mx-5 mt-3">
-          <p className="flex h-12 items-center justify-center gap-2 rounded-xl border-[1.5px] border-brass text-[15px] font-bold">
-            <Check size={18} strokeWidth={2.5} className="text-brass" aria-hidden="true" />
-            Day complete. Bonus +30 XP.
-          </p>
+          <DayComplete day={data.day} missions={missions} streak={data.streak.current} />
           {data.tomorrow ? (
             <p className="mt-3 text-sm text-moss">
               Tomorrow starts with: <span className="font-semibold text-bone">{data.tomorrow.title}</span> (
@@ -300,9 +434,33 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         </div>
       ) : null}
 
+      <div aria-live="polite">
+        {medalsNow.length > 0 ? (
+          <section className="mx-5 mt-3" aria-label="Medals earned">
+            <ul className="flex flex-col gap-2.5">
+              {medalsNow.map((id) => (
+                <li key={id}>
+                  <MedalEarned id={id} />
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/stats#medals"
+              className="-mb-1.5 inline-flex min-h-11 items-center text-sm font-semibold text-brass hov:text-brass-light"
+            >
+              See all your medals
+            </Link>
+          </section>
+        ) : null}
+      </div>
+
       <p className="mx-5 mt-3 min-h-5 text-sm text-bone" role="status" aria-live="polite">
         {message}
       </p>
+
+      <AnimatePresence>
+        {toast ? <MedalToast key={toast.key} ids={toast.ids} onDone={hideToast} /> : null}
+      </AnimatePresence>
 
       {extras}
 

@@ -8,6 +8,7 @@ import type { Pillar } from "@/lib/pillars";
 import { ARCHETYPE_INFO } from "@/lib/plan-engine/archetype";
 import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import { selectDailyMissions } from "@/lib/plan-engine/select";
+import { WEEK_THEMES } from "@/lib/plan-engine/week-themes";
 import { ensureToday, packContext, packNameOf, settingsOn, weekAdjustments, type Deps, type Result } from "./season-service";
 import type { MissionStatus, ShareName } from "./store";
 
@@ -31,6 +32,10 @@ export type HqData = {
   archetypeName: string;
   seasonNumber: number;
   day: number;
+  /** This week of the campaign and its theme, as on the Path map. */
+  week: number;
+  act: 1 | 2 | 3;
+  weekTheme: string;
   seasonFinished: boolean;
   fullAccess: boolean;
   hasPass: boolean;
@@ -125,6 +130,9 @@ export async function loadHq(deps: Deps, userId: string): Promise<Result<HqData>
       archetypeName: ARCHETYPE_INFO[t.profile.archetype].name,
       seasonNumber: t.profile.seasonNumber,
       day: t.day,
+      week: t.week,
+      act: t.act,
+      weekTheme: WEEK_THEMES[t.profile.archetype][t.week - 1],
       seasonFinished: t.seasonFinished,
       fullAccess: t.fullAccess,
       hasPass: hasSeasonPass(deps.now, entitlements),

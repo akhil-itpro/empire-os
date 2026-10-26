@@ -24,8 +24,8 @@ test.describe("Path, Stats and Me", () => {
     await expect(page.getByRole("heading", { name: "Your campaign" })).toBeVisible();
     // Count visible items only: Next.js keeps the previous screen hidden for instant back.
     await expect(page.getByRole("main").getByRole("listitem").filter({ hasText: /Week \d+:/ })).toHaveCount(13);
-    await expect(page.getByText("Week 1: Set-up week")).toBeVisible();
-    await expect(page.getByText("Week 6: Interview week")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Week 1: Set-up week")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Week 6: Interview week")).toBeVisible();
     await expect(page.locator('li[aria-current="step"]')).toContainText("Week 1");
     await noA11yViolations(page);
   });
@@ -45,6 +45,11 @@ test.describe("Path, Stats and Me", () => {
     await expect(page.getByText("You've invested 5m in yourself this season.")).toBeVisible();
     await page.getByRole("button", { name: "Show as a table" }).click();
     await expect(page.getByRole("table")).toContainText("30");
+    // Medals: all twelve listed, earned ones dated, the rest say how to earn them.
+    const medals = page.getByRole("region", { name: "Medals", exact: true }).getByRole("listitem");
+    await expect(medals).toHaveCount(12);
+    await expect(medals.filter({ hasText: "First mission" })).toContainText("Earned");
+    await expect(medals.filter({ hasText: "Clean sweep" })).toContainText("Finish every mission 7 days running.");
     await noA11yViolations(page);
   });
 

@@ -19,6 +19,8 @@ test.describe("the daily loop", () => {
     await expect(page.getByText("Do this one now. It takes 5 minutes.")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Mark done:/ })).toHaveCount(3);
     await expect(page.getByText("Day 1", { exact: true })).toBeVisible();
+    // The day is placed in the campaign: this week's theme from the Path map.
+    await expect(page.getByRole("main").getByText("Week 1 of 13: Set-up week. Act I, Foundation.")).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.map((v) => `${v.id}: ${v.help} (${v.nodes[0]?.target})`)).toEqual([]);
   });
@@ -31,15 +33,22 @@ test.describe("the daily loop", () => {
       await page.getByRole("button", { name: /^Mark done:/ }).first().click();
       await expect(page.getByText(`${i + 1} of 3 done`)).toBeVisible();
     }
-    await expect(page.getByText("Day complete. Bonus +30 XP.")).toBeVisible();
+    const card = page.getByRole("region", { name: "Day 1 complete" });
+    await expect(card).toBeVisible();
+    await expect(card.getByText("All three missions done. Bonus +30 XP.")).toBeVisible();
+    await expect(card.getByText(`+${expected}`, { exact: true })).toBeVisible();
     await expect(page.getByText(/Tomorrow starts with:/)).toBeVisible();
+    // Finishing missions earns real medals: the first mission and a full day.
+    const medals = page.getByRole("region", { name: "Medals earned" });
+    await expect(medals.getByText("First mission", { exact: true })).toBeVisible();
+    await expect(medals.getByText("Full day", { exact: true })).toBeVisible();
     // Close the one-time install tip if it appeared.
     const gotIt = page.getByRole("button", { name: "Got it" });
     if (await gotIt.isVisible().catch(() => false)) await gotIt.click();
 
     await page.reload();
     await expect(page.getByText("3 of 3 done")).toBeVisible();
-    await expect(page.getByText("Day complete. Bonus +30 XP.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Day 1 complete" })).toBeVisible();
     await expect(page.getByText(/^\d[\d,]* XP$/).first()).toHaveText(`${expected} XP`);
     // Done tickets show a plain check; undo lives in the details sheet, so a double tap can't undo.
     await expect(page.getByRole("button", { name: /^Mark done:/ })).toHaveCount(0);
@@ -68,10 +77,13 @@ test.describe("the daily loop", () => {
     expect(day2).toHaveLength(3);
     expect(new Set(day2).size).toBe(3);
     for (const title of day2) expect(day1).not.toContain(title);
+    const nudge = page.getByText("One mission today makes it 2 days in a row.");
+    await expect(nudge).toBeVisible();
 
     await page.getByRole("button", { name: /^Mark done:/ }).first().click();
     await expect(page.getByText("1 of 3 done")).toBeVisible();
     await expect(page.getByText(/^2 day streak$/)).toBeAttached();
+    await expect(nudge).toBeHidden();
   });
 
   test("a 3-day streak gets its full-screen moment", async ({ page, context }) => {
