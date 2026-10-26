@@ -236,8 +236,10 @@ describe("the War Room service", () => {
     const xpBefore = await store.xpTotal(STRONG);
     const first = await completeBoss(deps(8), STRONG);
     expect(first.ok && first.data.xpGained).toBe(150);
+    expect(first.ok && first.data.firstBoss).toBe(true);
     const again = await completeBoss(deps(9), STRONG);
     expect(again.ok && again.data.xpGained).toBe(0);
+    expect(again.ok && again.data.firstBoss).toBe(false);
     expect(await store.xpTotal(STRONG)).toBe(xpBefore + 150);
   });
 

@@ -280,6 +280,10 @@ export interface SeasonStore {
   updateReviewOutcome(userId: string, seasonNumber: number, week: number, outcome: ReviewOutcome): Promise<void>;
   /** True if this XP grant already exists (the weekly boss, for example). */
   hasXp(userId: string, kind: XpKind, ref: string): Promise<boolean>;
+  /** How many XP grants of one kind the student has (weekly bosses finished, for medals). */
+  countXp(userId: string, kind: XpKind): Promise<number>;
+  /** How many weekly reviews the student has finished, in every season (for medals). */
+  countWeeklyReviews(userId: string): Promise<number>;
 
   // --- College HQ. Callers check the founder role or org admin rights first. ---
   createOrg(name: string, city: string | null): Promise<Org>;

@@ -395,6 +395,14 @@ export class MemoryStore implements SeasonStore {
     return this.xp.some((e) => e.userId === userId && e.kind === kind && e.ref === ref);
   }
 
+  async countXp(userId: string, kind: XpKind) {
+    return this.xp.filter((e) => e.userId === userId && e.kind === kind).length;
+  }
+
+  async countWeeklyReviews(userId: string) {
+    return this.reviews.filter((r) => r.userId === userId).length;
+  }
+
   // --- College HQ ---
 
   orgs: Org[] = [];

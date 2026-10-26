@@ -15,6 +15,7 @@ import {
   type RankName,
   type SkipReason,
 } from "@/lib/game/rules";
+import type { MedalId } from "@/lib/game/medals";
 import { computeStreak, streakMilestone, type StreakState } from "@/lib/game/streak";
 import { rankFor, rankUp } from "@/lib/game/xp";
 import { PILLARS, type Pillar } from "@/lib/pillars";
@@ -25,6 +26,7 @@ import { LIBRARY, LIBRARY_BY_ID } from "@/lib/plan-engine/library";
 import type { Mission } from "@/lib/plan-engine/missions";
 import { isPackId, PACK_IDS, PACKS_BY_ID, type PackId } from "@/lib/plan-engine/packs";
 import { effectiveMinutes, selectDailyMissions, type PlanSettings, type WeekAdjustments } from "@/lib/plan-engine/select";
+import { medalsFromMission } from "./medal-service";
 import { linkReferral, rewardReferral } from "./referral-service";
 import type { PaymentGateway } from "./payment-service";
 import type { NewUserMission, Profile, SeasonStore, UserMission } from "./store";
@@ -276,6 +278,8 @@ export type Progress = {
   streakMilestone: number | null;
   /** True when this mission made an invite pay off: 7 days of full access for both. */
   referralReward: boolean;
+  /** Medals this mission just earned (lib/game/medals.ts). */
+  medals: MedalId[];
 };
 
 export async function completeMission(deps: Deps, userId: string, missionRowId: unknown): Promise<Result<Progress>> {
@@ -307,6 +311,7 @@ export async function completeMission(deps: Deps, userId: string, missionRowId: 
   if (dayComplete) await store.logEvent("day_complete", userId);
   // A new active day may complete an invite (3 different days).
   const referralReward = daysBefore.includes(today) ? false : await rewardReferral(deps, userId, daysBefore.length + 1);
+  const medals = await medalsFromMission(deps, profile, row.id);
 
   return {
     ok: true,
@@ -320,6 +325,7 @@ export async function completeMission(deps: Deps, userId: string, missionRowId: 
       streakState: stats.state,
       streakMilestone: daysBefore.includes(today) ? null : streakMilestone(stats.current, STREAK_MILESTONES),
       referralReward,
+      medals,
     },
   };
 }

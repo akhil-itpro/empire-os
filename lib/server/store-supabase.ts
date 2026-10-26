@@ -687,6 +687,25 @@ export class SupabaseSeasonStore implements SeasonStore {
     return Boolean(data);
   }
 
+  async countXp(userId: string, kind: XpKind) {
+    const { count, error } = await this.db
+      .from("xp_events")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("kind", kind);
+    if (error) fail("countXp", error);
+    return count ?? 0;
+  }
+
+  async countWeeklyReviews(userId: string) {
+    const { count, error } = await this.db
+      .from("weekly_reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if (error) fail("countWeeklyReviews", error);
+    return count ?? 0;
+  }
+
   // --- College HQ ---
 
   async createOrg(name: string, city: string | null) {

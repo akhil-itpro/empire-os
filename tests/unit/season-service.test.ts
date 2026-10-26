@@ -189,6 +189,19 @@ describe("completeMission", () => {
     expect(await completeMission(deps(at(2)), ALICE, first.id)).toMatchObject({ data: { streakMilestone: 3 } });
     expect(await completeMission(deps(at(2)), ALICE, second.id)).toMatchObject({ data: { streakMilestone: null } });
   });
+
+  it("reports each medal once, with the mission that earns it", async () => {
+    await start();
+    const ms = (await today()).missions;
+    expect(await completeMission(deps(), ALICE, ms[0].id)).toMatchObject({ data: { medals: ["first_mission"] } });
+    expect(await completeMission(deps(), ALICE, ms[1].id)).toMatchObject({ data: { medals: [] } });
+    expect(await completeMission(deps(), ALICE, ms[2].id)).toMatchObject({ data: { medals: ["full_day"] } });
+    // Back after a missed day, at 06:30 India time: Early start and Comeback.
+    const [next] = (await today(ALICE, at(2, 1))).missions;
+    expect(await completeMission(deps(at(2, 1)), ALICE, next.id)).toMatchObject({
+      data: { medals: ["early_start", "comeback"] },
+    });
+  });
 });
 
 describe("undoMission", () => {

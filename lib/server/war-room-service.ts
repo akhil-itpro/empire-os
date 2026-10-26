@@ -267,7 +267,7 @@ export async function loadBoss(deps: Deps, userId: string): Promise<BossData | n
 export async function completeBoss(
   deps: Deps,
   userId: string,
-): Promise<Result<{ xpGained: number; totalXp: number; rankUp: string | null }>> {
+): Promise<Result<{ xpGained: number; totalXp: number; rankUp: string | null; firstBoss: boolean }>> {
   const profile = await deps.store.getProfile(userId);
   if (!profile) return fail("not_started", "Start your season first.");
   if (!hasFullAccess(deps.now, profile.trialEndsAt, await deps.store.entitlements(userId))) {
@@ -278,9 +278,11 @@ export async function completeBoss(
   const before = await deps.store.xpTotal(userId);
   const added = await deps.store.addXp(userId, "boss", boss.ref, PLAN_CONFIG.warRoom.bossXp);
   const stats = await recomputeStats(deps, userId, profile);
+  // The first boss ever finished earns the "Boss beaten" medal.
+  const firstBoss = added && (await deps.store.countXp(userId, "boss")) === 1;
   return {
     ok: true,
-    data: { xpGained: added ? PLAN_CONFIG.warRoom.bossXp : 0, totalXp: stats.xp, rankUp: rankUp(before, stats.xp) },
+    data: { xpGained: added ? PLAN_CONFIG.warRoom.bossXp : 0, totalXp: stats.xp, rankUp: rankUp(before, stats.xp), firstBoss },
   };
 }
 
