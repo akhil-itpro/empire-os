@@ -161,7 +161,7 @@ export function HqView({ data, first, extras }: { data: HqData; first: boolean; 
         <div className="mt-1.5 flex gap-2">
           <Chip
             emphasis
-            srLabel={data.streak.current === 1 ? "day streak" : "day streak"}
+            srLabel="day streak"
             icon={<Flame size={18} strokeWidth={1.9} className="text-brass" aria-hidden="true" />}
           >
             {data.streak.current}

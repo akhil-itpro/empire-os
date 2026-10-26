@@ -43,12 +43,12 @@ export function InstallTip({ show }: { show: boolean }) {
     <Sheet open={open} onClose={() => setOpen(false)} title="Put EMPIRE OS on your home screen">
       <p className="text-[15px] text-moss">It opens like an app, straight to today&apos;s missions.</p>
       <h3 className="mt-5 text-sm font-bold text-bone">Android, in Chrome</h3>
-      <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[15px] text-bone">
+      <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[15px] text-bone marker:normal-nums">
         <li>Tap the three dots at the top right.</li>
         <li>Tap &ldquo;Add to Home screen&rdquo;, then &ldquo;Install&rdquo;.</li>
       </ol>
       <h3 className="mt-4 text-sm font-bold text-bone">iPhone, in Safari</h3>
-      <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[15px] text-bone">
+      <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[15px] text-bone marker:normal-nums">
         <li>Tap the Share button at the bottom.</li>
         <li>Tap &ldquo;Add to Home Screen&rdquo;, then &ldquo;Add&rdquo;.</li>
       </ol>

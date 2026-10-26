@@ -68,7 +68,7 @@ export function GuideArticle({ slug }: { slug: string }) {
               ))}
               {b.list ? (
                 <List
-                  className={`mt-3 flex flex-col gap-2.5 pl-5 text-base leading-relaxed text-bone marker:text-brass ${b.ordered ? "list-decimal" : "list-disc"}`}
+                  className={`mt-3 flex flex-col gap-2.5 pl-5 text-base leading-relaxed text-bone marker:text-brass marker:normal-nums ${b.ordered ? "list-decimal" : "list-disc"}`}
                 >
                   {b.list.map((item) => (
                     <li key={item}>{item}</li>
