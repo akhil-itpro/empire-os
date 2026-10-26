@@ -39,6 +39,10 @@ Completed missions count towards XP, rank and activity. At least one finished mi
 
 Minutes in Stats come from the recorded durations of completed missions; they are not a background timer. Charts offer a table view for reading their values. Medals are worked out from the same records each time, so they always match your history; Stats shows the date each one was earned (War Room and Boss beaten show "Earned" without a date).
 
+## Finish a season and start the next
+
+After Day 90, HQ shows **Season 1 complete**: days active out of 90, missions done, time invested, your best streak in the season and your medals, all from your own records. Choose **Share your season** for the image card, or **Start Season 2**. The new season starts that day from Day 1 with your current plan. Your XP, rank and medals come with you; Stats and Path switch to the new season. There is no second free week: you continue on Free (one mission a day) unless you have Season Pass.
+
 ## Review your week
 
 The **War Room** opens from day 7 and then weekly. Use the prompt in HQ or **Me → War Room: review your week**.

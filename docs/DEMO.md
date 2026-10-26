@@ -71,6 +71,8 @@ From a new Day 1 sample student, use **Me → Founder tools → +7 days**, then 
 
 The Free experience keeps one mission a day in the chosen pillar. Path weeks 2 to 13 and packs are locked. Open **Me → See Season Pass** to inspect the offer. By default it is in **reserve mode**: reserving a price records an intention and explicitly says no payment was taken.
 
+**Season 2:** from a sample student who finished a mission or two, select **+7 days** thirteen times (Day 92). HQ shows **Season 1 complete** with that student's real numbers and **Start Season 2**. Starting it returns to Day 1 with XP, rank and medals kept and no second free week. [Browser coverage](../tests/e2e/daily-loop.spec.ts).
+
 Do not enter real payment details during this tour. Automated checkout tests use a separate stand-in gateway; those checks do not establish that Razorpay has been configured or that real money moved. [Payment tests](../tests/e2e/payments.spec.ts) · [Current status](ROADMAP.md).
 
 ## 6. Open Founder HQ and a sample college

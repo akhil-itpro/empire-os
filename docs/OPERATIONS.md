@@ -26,7 +26,7 @@ The founder enters secret values directly into local/host settings. Agents must 
 
 | Area | Required check before relying on it |
 | --- | --- |
-| Database | Apply the eight migrations in filename order; compare generated types with [`lib/supabase/types.ts`](../lib/supabase/types.ts) |
+| Database | Apply the nine migrations in filename order; compare generated types with [`lib/supabase/types.ts`](../lib/supabase/types.ts) |
 | Authentication | Verify email-code and Google sign-in, redirects, sign-out and session refresh using real test accounts |
 | Permissions | Run `npm.cmd run test:rls` on the intended development project and inspect Supabase Security Advisor; recheck every role's application access |
 | Host | Build and deploy the intended commit, set the canonical site URL, and confirm neither local test flag is configured |

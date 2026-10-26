@@ -71,7 +71,7 @@ Before real students or colleges:
 
 ## Known implementation follow-ups
 
-- Several live export queries return empty sections on missing/error results without surfacing query errors. Verify completeness and improve error reporting before launch.
+- Live export now fails with an error if any query fails, instead of returning empty sections (26 Oct 2026). Verify the complete file against a real Supabase account before launch.
 - Payment rows cascade with student deletion. Decide and implement financial-record retention with the founder's CA/lawyer before taking money; do not assume the current behavior meets those obligations.
 - Anonymous college-demo requests are not account-linked; define their retention and operator handling before collecting real inquiries.
 - Service writes are privileged and often span multiple store operations. Review partial failures, concurrency and retries against the real database/provider; local idempotency tests do not establish every distributed failure mode.

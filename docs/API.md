@@ -61,7 +61,7 @@ These are application functions compiled into the Next.js action protocol, not s
 
 | Module | Actions | Boundary |
 | --- | --- | --- |
-| [`season.ts`](../app/actions/season.ts) | `startSeason`, `completeMission`, `undoMission`, `skipMission`, `swapMission`, `chooseFreePillar` | Session identity; service checks assignment ownership, day, status and access |
+| [`season.ts`](../app/actions/season.ts) | `startSeason`, `completeMission`, `undoMission`, `skipMission`, `swapMission`, `chooseFreePillar`, `startNextSeason` (after Day 90 only) | Session identity; service checks assignment ownership, day, status and access |
 | [`growth.ts`](../app/actions/growth.ts) | `reservePass`, `setPack`, `setShareName` | Session identity; reservation/access/pack/name-choice validation |
 | [`me.ts`](../app/actions/me.ts) | `updateSettings`, `saveJournal` | Allowed settings only; changes start tomorrow; journal length and profile checks |
 | [`war-room.ts`](../app/actions/war-room.ts) | `submitReview`, `decideProposal`, `completeBoss` | Current review/boss eligibility, access and validated answers |

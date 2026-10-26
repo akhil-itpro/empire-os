@@ -30,7 +30,7 @@ The intended outcome is more consistent action. Employment, health, savings, ret
   <tr><th>A plan with a reason</th><th>Today's mission tickets</th><th>A weekly reset</th></tr>
   <tr>
     <td><img src="docs/images/archetype.png" alt="The Grinder archetype reveal with a three-act season and reasons based on Rahul's fictional quiz answers" width="260"></td>
-    <td><img src="docs/images/student-hq.png" alt="Student HQ with the season medallion, pillar meters, XP and today's mission tickets" width="260"></td>
+    <td><img src="docs/images/student-hq.png" alt="Student HQ with this week's theme, the score medallion, pillar meters, XP rising after a done mission, mission tickets and a medal note" width="260"></td>
     <td><img src="docs/images/war-room.png" alt="War Room weekly review asking about difficulty, blockers and next week's focus" width="260"></td>
   </tr>
 </table>

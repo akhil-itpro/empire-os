@@ -73,6 +73,8 @@ Goal: a new visitor reaches their plan in under 3 minutes and feels it was made 
 
 **Season:** 90 days in three acts. Act I Foundation (weeks 1 to 4), Act II Execution (weeks 5 to 8), Act III Ascension (weeks 9 to 13).
 
+**After Day 90** (added 26 Oct 2026, rules chosen by the founder): HQ shows "Season 1 complete" with real numbers (days active of 90 on a 90-tick medallion, missions done, time invested, best streak in the season, medals), "Share your season" and "Start Season 2". The next season starts the day the student taps it, from Day 1, with their current plan settings. XP, rank, medals and history stay. There is no second free week: the new season runs on whatever access the student has (Free, or a Season Pass still running); a new Season Pass is a new purchase. The server logs `season_start`, and Founder HQ counts "Next seasons started". Stats and Path show the current season.
+
 **XP:** missions give 30, 45 or 60 by difficulty. Finishing all of today's missions adds 30. XP measures activity in the app only, never a person's worth, looks or wealth.
 
 **Ranks:** Rookie 0, Operator 400, Strategist 1,500, Architect 3,500, Commander 6,500, Legend 10,000 XP.
@@ -102,7 +104,7 @@ Never medical, investment or legal advice. No crash diets, supplements or extrem
 - Act matches the current act; difficulty comes from intensity and week number.
 - No mission repeats within 5 days. Prefer missions tagged with the archetype.
 - Generated once per student per local date, never duplicated.
-- `previewPlan(answers)` returns archetype, top two pillars, three sample missions and three milestones per act. It works before sign-up and writes nothing.
+- `previewPlan(answers)` returns archetype, top two pillars, three sample missions and three milestones per act. It works before sign-up and writes nothing. Season 1, Day 1 uses the preview's tie-breaks, so the student gets exactly the missions the reveal described.
 
 **Packs** (Pass only): Placement Prep, Home Muscle, ₹10K Savings Sprint, Speak Like a Leader. 10 missions each.
 
@@ -133,7 +135,7 @@ Results screen: "What changed and why" in 2 to 4 plain bullets with real numbers
 
 ## 10. Founder HQ
 
-Visible only to users with the founder role (a roles table only the server writes). Read-only cards with a date filter: sign-ups per day; the funnel (landing, quiz start, quiz complete, reveal, oath, sign-up, first mission, came back next day) with drop-off at each step; Day-1, Day-7 and Day-30 return; missions by pillar; most-skipped missions with reasons; paywall views by source; reservations and founder-price count; share cards created; referral sign-ups; colleges and batches. Plus the launch checklist with manual checkboxes saved in the database.
+Visible only to users with the founder role (a roles table only the server writes). Read-only cards with a date filter: sign-ups per day; the funnel (landing, quiz start, quiz complete, reveal, oath, sign-up, first mission, came back next day) with drop-off at each step; Day-1, Day-7 and Day-30 return; missions by pillar; most-skipped missions with reasons; paywall views by source; reservations and founder-price count; share cards created; referral sign-ups; next seasons started; colleges and batches. Sign-up dates come from when the account was created, never from the season start (which moves with Season 2). Plus the launch checklist with manual checkboxes saved in the database.
 
 ## 11. Data rules
 
