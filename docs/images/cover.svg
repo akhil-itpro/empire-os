@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="560" viewBox="0 0 1440 560" role="img" aria-labelledby="title desc">
+  <title id="title">EMPIRE OS — turn the next 90 days into a season</title>
+  <desc id="desc">A forest-ink and brass campaign kit with a season medallion, mission ticket, four pillars and three acts.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#2A3A31" stroke-width=".6"/></pattern>
+    <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1B2721"/><stop offset="1" stop-color="#0C1310"/></linearGradient>
+  </defs>
+  <rect width="1440" height="560" rx="20" fill="#0C1310"/>
+  <rect width="1440" height="560" rx="20" fill="url(#grid)" opacity=".35"/>
+  <path d="M60 54H1380" stroke="#2A3A31"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="60" y="36" fill="#9AA597" font-size="13" letter-spacing="3">THE CAMPAIGN KIT</text>
+    <text x="1210" y="36" fill="#C9A24B" font-size="13" letter-spacing="2">SEASON 01</text>
+    <text x="56" y="155" fill="#ECE5D3" font-size="90" font-weight="900" letter-spacing="-5">EMPIRE<tspan fill="#C9A24B"> OS</tspan></text>
+    <text x="60" y="221" fill="#ECE5D3" font-size="37" font-weight="700">Make the next 90 days</text>
+    <text x="60" y="268" fill="#ECE5D3" font-size="37" font-weight="700">your best season.</text>
+    <text x="60" y="317" fill="#9AA597" font-size="20">Three daily missions. A plan with a reason.</text>
+    <g font-size="16" fill="#ECE5D3">
+      <circle cx="67" cy="364" r="6" fill="#3987E5"/><text x="84" y="370">Career</text>
+      <circle cx="187" cy="364" r="6" fill="#D95926"/><text x="204" y="370">Body</text>
+      <circle cx="296" cy="364" r="6" fill="#9085E9"/><text x="313" y="370">Mind</text>
+      <circle cx="405" cy="364" r="6" fill="#199E70"/><text x="422" y="370">Money</text>
+    </g>
+    <g transform="translate(1030 232)">
+      <circle r="161" fill="url(#disc)" stroke="#8C6A2A" stroke-width="2"/>
+      <circle r="151" fill="none" stroke="#C9A24B" stroke-width="9" stroke-dasharray="2 8.54"/>
+      <circle r="132" fill="none" stroke="#8C6A2A"/>
+      <text y="-40" text-anchor="middle" fill="#9AA597" font-size="14" letter-spacing="3">YOUR NEXT</text>
+      <text y="46" text-anchor="middle" fill="#ECE5D3" font-size="112" font-weight="800" letter-spacing="-6">90</text>
+      <text y="80" text-anchor="middle" fill="#C9A24B" font-size="18" letter-spacing="7">DAYS</text>
+    </g>
+    <g transform="translate(781 371) rotate(-4)">
+      <rect width="510" height="114" rx="12" fill="#141E19" stroke="#8C6A2A"/>
+      <path d="M392 10V104" stroke="#8C6A2A" stroke-dasharray="4 5"/>
+      <circle cx="392" cy="0" r="8" fill="#0C1310"/><circle cx="392" cy="114" r="8" fill="#0C1310"/>
+      <circle cx="27" cy="28" r="4" fill="#3987E5"/>
+      <text x="40" y="33" fill="#9AA597" font-size="13">Career · Today's mission</text>
+      <text x="24" y="65" fill="#ECE5D3" font-size="22" font-weight="700">Practise your introduction</text>
+      <text x="24" y="91" fill="#9AA597" font-size="14">One small action. Then show up tomorrow.</text>
+      <text x="450" y="53" fill="#C9A24B" font-size="25" font-weight="700" text-anchor="middle">+30</text>
+      <text x="450" y="77" fill="#9AA597" font-size="13" text-anchor="middle">XP</text>
+    </g>
+    <path d="M60 454H610" stroke="#2A3A31" stroke-width="2"/>
+    <circle cx="66" cy="454" r="5" fill="#C9A24B"/><circle cx="274" cy="454" r="5" fill="#8C6A2A"/><circle cx="484" cy="454" r="5" fill="#8C6A2A"/>
+    <g fill="#9AA597" font-size="13"><text x="60" y="487">01 / Foundation</text><text x="267" y="487">02 / Execution</text><text x="477" y="487">03 / Ascension</text></g>
+    <path d="M60 518H1380" stroke="#2A3A31"/>
+    <text x="60" y="545" fill="#9AA597" font-size="12" letter-spacing="1">DETERMINISTIC PLANNING · STUDENT SEASONS · COLLEGE HQ</text>
+    <text x="1216" y="545" fill="#9AA597" font-size="12">PRODUCT PORTFOLIO</text>
+  </g>
+</svg>

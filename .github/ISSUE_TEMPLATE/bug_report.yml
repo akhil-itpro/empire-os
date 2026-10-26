@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible app problem using fictional data.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: "Use fictional records. Never include keys, auth cookies, invitation tokens, private exports or student information. For sensitive findings, follow SECURITY.md privately."
+  - type: input
+    id: screen
+    attributes:
+      label: Screen or route
+      placeholder: /hq, /path, /college/…
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Local test mode
+        - Configured development environment
+        - Deployed environment
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected result and actual result
+      description: Include the browser/device and source commit if known. Use safe screenshots only.
+    validations:
+      required: true

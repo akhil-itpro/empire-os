@@ -1,6 +1,6 @@
 // Screenshots of the main screens for design reviews. Skipped unless SHOTS_DIR is set:
 //   SHOTS_DIR=some/folder npx playwright test tests/e2e/screens.spec.ts
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { startSeason, travelDays } from "./helpers";
 
 const dir = process.env.SHOTS_DIR;
@@ -42,14 +42,21 @@ test("Path, Stats and Me", async ({ page }) => {
   }
   for (const route of ["path", "stats", "me"]) {
     await page.goto(`/${route}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: `${dir}/${route}.png`, fullPage: true });
+    if (route === "path") await page.screenshot({ path: `${dir}/path-viewport.png` });
   }
 });
 
 test("College HQ (sample batch) at laptop and phone width", async ({ page }) => {
   await page.goto("/api/test-login");
   await page.getByRole("button", { name: "Create a sample batch" }).click();
-  await page.getByRole("link", { name: "Open the demo" }).last().click();
+  await expect(page.getByText(/Sample batch created/)).toBeVisible();
+  // Other scenarios can create samples in the shared store. This list is
+  // scoped to the current founder's memberships, so the link is theirs.
+  await page.goto("/college/batches");
+  await page.getByRole("link", { name: "Open overview", exact: true }).click();
   await page.getByRole("heading", { name: "CSE 2027 batch", level: 1 }).waitFor();
   const overview = page.url();
   await page.setViewportSize({ width: 1280, height: 980 });
@@ -77,6 +84,7 @@ test("War Room form and results", async ({ page, context }) => {
   await page.getByRole("button", { name: "Energy" }).click();
   await page.getByRole("button", { name: "My goal" }).click();
   await page.screenshot({ path: `${dir}/war-room-form.png`, fullPage: true });
+  await page.screenshot({ path: `${dir}/war-room-viewport.png` });
   await page.getByRole("button", { name: /Get fit and strong/ }).click();
   await page.getByRole("button", { name: "Set next week" }).click();
   await page.getByRole("heading", { name: "Apply new plan?" }).waitFor();

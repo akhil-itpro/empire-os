@@ -10,6 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "docs:check": "node scripts/check-docs.mjs",
+    "screens:portfolio": "node scripts/portfolio-screens.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
