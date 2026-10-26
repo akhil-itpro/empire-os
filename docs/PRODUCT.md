@@ -51,7 +51,7 @@ Goal: a new visitor reaches their plan in under 3 minutes and feels it was made 
 
 ## 4. The daily loop
 
-- **HQ (today):** Season and day counter, streak chip, rank chip, Empire score medallion, four pillar meters (last 7 days), XP bar to next rank, today's three mission tickets. "Mark done" stamps the ticket and counts XP up. "Swap" (once a day) and "Skip" (reason: No time, Not relevant, Too hard) live in the ticket's detail sheet. All three done shows "Day complete. Bonus +30 XP." and a teaser of tomorrow's first mission.
+- **HQ (today):** Season and day counter, streak chip, rank chip, this week's theme from the Path map ("Week 2 of 13: Resume week. Act I, Foundation."), Empire score medallion, four pillar meters (last 7 days), XP bar to next rank, today's three mission tickets. When the streak is alive and nothing is done yet today: "One mission today makes it 5 days in a row." (never a guilt trip). "Mark done" stamps the ticket, the XP gained rises next to the total, and XP counts up. "Swap" (once a day) and "Skip" (reason: No time, Not relevant, Too hard) live in the ticket's detail sheet. All done shows a "Day 12 complete" ticket ("All three missions done. Bonus +30 XP.", the streak, the XP earned) and a teaser of tomorrow's first mission. A newly earned medal shows a short note above the bottom bar and a card under the missions.
 - **Path:** the campaign map. 13 weekly nodes in three acts. Finished weeks show XP earned; the current week pulses; future weeks show a theme ("Week 6: Interview week"). Free users see weeks 2 to 13 locked.
 - **Stats:** completion by pillar (7 days and season), missions done, minutes invested ("You've invested 14h 30m in yourself"), XP by day, current and best streak. All computed from real rows.
 - **Me:** profile basics; edit goal, pillar order, daily time, budget and city (applies from tomorrow, never rewrites history); pass status; join a college batch; privacy and data; sign out.
@@ -80,6 +80,8 @@ Goal: a new visitor reaches their plan in under 3 minutes and feels it was made 
 **Streak:** a day counts when at least one mission is done, in the student's time zone. Pass holders get one streak shield a week, used automatically on a missed day. A missed day resets the streak gently: "Streak paused. Your XP and rank are safe. Go again today."
 
 **Empire score:** missions completed ÷ missions assigned over the last 7 days, as 0 to 100. Pillar meters use the same formula per pillar.
+
+**Medals** (added 26 Oct 2026, approved by the founder): twelve medals worked out from real activity each time, never typed in or stored, and kept across seasons. Shown on Stats (earned ones dated, the rest say how to earn them). First mission; Full day (every mission in one day); Early start (a mission finished between 5 and 8 in the morning, student's time zone); Comeback (a mission again after a missed day); All four (every pillar in one season week); War Room (a weekly review); Clean sweep (every mission 7 days running); Boss beaten (a weekly boss mission); Ten hours (600 minutes of missions); Fifty missions; Pack finished (all 10 missions of a pack); Thirty days (missions on 30 different days). Rules and numbers live in `lib/game/medals.ts`. Like XP, medals measure activity in the app only.
 
 ## 6. Missions and the plan engine
 

@@ -118,7 +118,7 @@ Use the exact [phone setup](SETUP.md#try-it-on-a-phone): start the dev server wi
 1. **Onboarding:** select **Find your archetype**, choose an adult age bracket and use the fictional Rahul answers in [DEMO.md](DEMO.md#1-build-a-season-before-sign-up). Check that the reveal explains the 45-minute/free/phone-only plan.
 2. **Oath and save:** press and hold to take the oath, then select **Test sign-in (local test mode)**. HQ should open on Day 1 with three tickets.
 3. **Completion:** mark one mission done. Check the stamp, count and XP, then refresh. Open its details and use **Undo, mark not done** if testing the reverse path.
-4. **Day complete:** finish all three and confirm **Day complete. Bonus +30 XP.** Close a milestone/install prompt if shown.
+4. **Day complete:** finish all three and confirm the **Day 1 complete** ticket with "All three missions done. Bonus +30 XP." Close a milestone/install prompt if shown.
 5. **Navigation:** open **Path**, **Stats** and **Me**. Check that the chart's **Show as a table** control works and the bottom navigation remains usable without sideways page scrolling.
 6. **Private journal:** save a fictional line in **One line for today** and refresh. Do not enter real private information in the memory demo.
 7. **Tomorrow:** on Me, use **Founder tools → +1 day**, then open HQ. Expect Day 2 with a fresh mission set. Use **Today** to reset the clock.

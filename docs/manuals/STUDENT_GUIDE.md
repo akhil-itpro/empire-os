@@ -32,12 +32,12 @@ Completed missions count towards XP, rank and activity. At least one finished mi
 
 | Tab | What to do there |
 | --- | --- |
-| **HQ** (`/hq`) | See today's missions, score, streak, rank and weekly-review reminders |
+| **HQ** (`/hq`) | See this week's theme, today's missions, score, streak, rank, new medals and weekly-review reminders |
 | **Path** (`/path`) | View **Your campaign**, its three acts and weekly themes; inspect mission packs |
-| **Stats** (`/stats`) | Read missions done, XP, current/best streak, XP by day and completion by pillar |
+| **Stats** (`/stats`) | Read missions done, XP, current/best streak, your twelve medals, XP by day and completion by pillar |
 | **Me** (`/me`) | View access status, journal, invitations, share cards, plan settings, college membership and data controls |
 
-Minutes in Stats come from the recorded durations of completed missions; they are not a background timer. Charts offer a table view for reading their values.
+Minutes in Stats come from the recorded durations of completed missions; they are not a background timer. Charts offer a table view for reading their values. Medals are worked out from the same records each time, so they always match your history; Stats shows the date each one was earned (War Room and Boss beaten show "Earned" without a date).
 
 ## Review your week
 

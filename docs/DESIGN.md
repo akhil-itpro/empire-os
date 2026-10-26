@@ -70,6 +70,8 @@ Put these in `app/globals.css` with Tailwind's `@theme`, and use only these name
 | Ticket (mission) | Ledger background, radius 12px, 104px tall. Main area: pillar dot and name (12px moss), title (16px 600 bone, 2 lines max), clock icon and minutes. Stub 92px wide on the right, separated by a 2px dashed rule with two 16px field-coloured notches top and bottom; shows "+45 XP" and a 44px round check button |
 | Stamp | "DONE", stencil 900 28px, stamp red, 3px border, inner 1.5px outline inset 7px, radius 6px, rotated -10°. Appears with a short slam (scale 1.4 to 1, 180ms) |
 | Medallion | Outer milled ring of ticks (90 for days, 100 for score), lit ticks brass, unlit ticks rule; inner disc ledger with a 1.5 to 2.5px brass-deep ring. Content centred |
+| Medal | A small Medallion (36 ticks, 40 to 64px) with a lucide icon: earned is a fully lit ring and a brass icon, not yet earned is an unlit ring and a moss icon. The name and "Earned 24 Oct" or how to earn it are always written next to it. A new medal's ring lights tick by tick on HQ (end state with reduced motion) |
+| Day complete | A ticket with a 1.5px brass border: "Day 12 complete" (display 26px), the bonus line and the streak on the left; the XP earned in brass on the 92px stub |
 | Chip | 36px tall, radius 18px, 1px rule border, ledger background, icon plus value |
 | Option tile | Ledger, 1.5px rule border, radius 14px, min 124px tall. Selected: raised background, 2px brass border, 22px brass check badge top right |
 | Progress ticks | 11 segments, 4px tall, 4px gaps, brass done, rule to do |

@@ -38,7 +38,7 @@ Select **Start Season 1**, then press and hold for the oath. With reduced motion
 
 On **HQ** (`/hq`), open a mission ticket to inspect its instructions, minutes and XP. Mark one mission done. It receives a **DONE** stamp, the completion count changes and XP increases. Refresh to confirm the change remains for the running server session.
 
-Complete the other two missions. Expect **Day complete. Bonus +30 XP.** and a preview of tomorrow's first mission. Open a completed ticket if you want to undo it: **Undo, mark not done** lives in the detail sheet.
+Complete the other two missions. Expect a **Day 1 complete** ticket ("All three missions done. Bonus +30 XP.") with the XP earned, the **First mission** and **Full day** medals, and a preview of tomorrow's first mission. Open a completed ticket if you want to undo it: **Undo, mark not done** lives in the detail sheet.
 
 For a separate exercise, start a fresh student journey in another private session. Open an unfinished mission and select **Swap for another mission**; a second swap is unavailable that day. A skip asks for **No time**, **Not relevant** or **Too hard**. Use this on the sample account only.
 
