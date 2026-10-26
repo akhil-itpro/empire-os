@@ -58,7 +58,7 @@ These are rendered application screens captured in local test mode. Sample names
 | --- | --- | --- |
 | Onboarding | Adult age gate, eleven-question quiz, six archetypes, three-act preview, oath and sign-up screens | Quiz and pretend sign-in tested locally; real email/Google flow pending |
 | Daily missions | 120 core missions and four ten-mission packs; eligibility and scoring for time, cost, equipment, act and difficulty | Deterministic rules and local browser flows tested |
-| Game loop | Done stamps, XP, ranks, streaks, shields, daily bonus, swap/skip, HQ, Path, Stats and Me | Local services and browser tests; hosted data path pending |
+| Game loop | Done stamps, XP, ranks, streaks, shields, daily bonus, twelve medals from real activity, swap/skip, HQ, Path, Stats and Me | Local services and browser tests; hosted data path pending |
 | War Room | Weekly review, easier/harder/free-only adjustments, explanations, boss missions and confirmation for a new plan | Tested with a local clock and in-memory store |
 | College HQ | Consent-based batch joining, overview, students, sections, in-app nudges, invite poster and printable report | Generated batch and permission scenarios tested locally; live organization isolation pending |
 | Founder HQ | Funnel, return metrics, reservations, launch checklist, college/batch setup and demo requests | Local fixture workflows; figures are not customer traction |
