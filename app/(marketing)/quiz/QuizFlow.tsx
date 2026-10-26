@@ -194,7 +194,9 @@ export function QuizFlow() {
     );
   }
 
-  if (step === "build") return <BuildingStep steps={buildingSteps(full)} onDone={next} />;
+  // Building replaces itself in the history, so Back from the reveal goes to the
+  // last question instead of re-running the checklist and bouncing forward again.
+  if (step === "build") return <BuildingStep steps={buildingSteps(full)} onDone={() => go("reveal", true)} />;
 
   if (step === "reveal") {
     return <RevealOnce firstName={name} preview={preview} onStart={next} />;

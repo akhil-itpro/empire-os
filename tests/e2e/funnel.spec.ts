@@ -90,6 +90,12 @@ test.describe("the hook: landing to sign-up", () => {
     await shot(page, "07-reveal");
     await noA11yViolations(page);
 
+    // Back from the reveal returns to the last question, not to the checklist.
+    await page.goBack();
+    await expect(page.getByRole("heading", { name: "How hard should we push?" })).toBeVisible();
+    await page.goForward();
+    await expect(page.getByRole("heading", { name: "The Grinder" })).toBeVisible();
+
     await page.getByRole("button", { name: "Start Season 1" }).click();
     await expect(page.getByRole("heading", { name: /I'll show up for 90 days/ })).toBeVisible();
     await shot(page, "08-oath");
