@@ -4,7 +4,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Last updated
 
-2026-10-25, by Claude (Opus 5.5). Clean point after Phase 10: every phase is written and tested locally.
+2026-10-26, by Codex (GPT-6). Portfolio and documentation checkpoint after Phase 10; all implementation phases remain locally built, with live verification pending.
 
 ## Current phase and step
 
@@ -19,18 +19,22 @@ All ten phases are built. What's left is going live, which needs the founder's a
 - Phase 10 (payments): 5 of 8. Built behind a switch and tested against a stand-in Razorpay. Open: founder's keys, Razorpay test-mode run, Instagram in-app browser check. The plan's gate still applies: Razorpay KYC, Day-7 return at 15% or more, and real reservations before turning payments on.
 - No phase from 2 on is tagged yet: tags wait for each phase's "Done when" on the real Supabase project.
 
+The founder approved a GitHub portfolio/documentation update for **EMPIRE OS in `D:\EmpireOS`**. It is saved on `main` in the existing private `akhil-itpro/empire-os` repository. No new application phase was started and no live setup/launch checkboxes were marked complete. Start the documentation at [docs/README.md](docs/README.md).
+
 ## What this session did
 
-- Phase 7 College HQ: tables `orgs`, `org_admins`, `org_invites`, `batches`, `batch_members`, `nudges` with RLS by organisation; joining with a consent screen from Me or `/join/CODE`; leaving; paid batches give Season Pass access (counts as Season Pass, including shields); overview, students, batches, invite (code, link, A4 poster with QR), printable weekly report; in-app reminders on HQ; founder tools and a labelled sample batch in Founder HQ.
-- Phase 8 War Room: rules in `PLAN_CONFIG.warRoom` and `lib/plan-engine/war-room.ts`; review on day 7, 14, ...; "What changed and why" with real numbers, "Reset, don't quit" copy, boss mission (+150 XP), goal or city change with "Apply new plan?", Free preview with one upgrade button.
-- Phase 9: `/colleges` with real College HQ screens, honest pilot pricing and a demo form (table `demo_requests`, shown in Founder HQ); two guides; share images, sitemap, robots; Latin-only WOFF2 display fonts (about 13 KB each) for speed.
-- Phase 10: Razorpay orders, server-verified grants, idempotent webhooks, redirect callback for in-app browsers, receipts in Me. Off unless `PAYMENTS_LIVE=1` and the three keys are set.
-- Fixed a real bug: a quick second tap on a just-finished ticket could undo it. Undo now lives only in the mission sheet.
-- Checks at the end: 195 unit tests and 57 Playwright tests pass (5 screenshot tests skipped by design), lint and typecheck clean, `npm run build` passes.
+- Rebuilt `README.md` as a portfolio: campaign-kit SVG cover, six actual app screenshots, feature/status table, architecture diagram, account-free local setup and clear ownership/AI-assistance context. Updated the GitHub description and ten topics; the repository remains private, with no selected open-source license or public live-demo claim.
+- Added a documentation hub, case study, business-value hypotheses, architecture, interfaces/API, setup, reviewer tour, testing evidence, operations, security, roadmap and student/college/founder manuals. Added contribution/private-reporting guides, GitHub issue/PR templates and a design-reference index. Original product/design/build/launch specifications remain authoritative.
+- Added `npm.cmd run docs:check` (relative links, Markdown fragments and image paths without reading environment files) and `npm.cmd run screens:portfolio` (eleven existing funnel/capture journeys, six curated images). Provenance and refresh details are in `docs/images/README.md`.
+- Fixed only the optional screenshot helper: wait for sample-creation success, open the current founder's membership-scoped batch list, wait for streamed headings/fonts, and add viewport captures for Path/War Room. The first combined run passed all 57 functional scenarios plus three capture journeys but failed the fourth capture by following an old batch link. The four captures passed after the correction, and the final portfolio command passed all eleven of its existing journeys.
+- Checks on 26 Oct: 195 unit/database/service tests across 13 files; all 57 functional browser scenarios; corrected screenshot journeys; lint, typecheck, production build and documentation checks. Inspected the cover and all six screens, and rendered README through GitHub's Markdown API with no broken images. Hosted RLS/auth/payments, dependency audit, bundle scan, live Lighthouse and actual phone checks were not rerun. Details: `docs/TESTING.md`.
+- Saved portfolio checkpoint `c069d4a` and pushed it to `origin/main`, followed by this handoff checkpoint. No application routes, services, schema, dependencies or provider accounts were changed. Source review identified launch follow-ups for export error reporting and payment/demo-request retention, recorded under Known problems and in the new security/operations guides.
 
 ## Next step
 
-When the founder has Supabase: apply all eight migrations in `supabase/migrations/`, regenerate types (compare with the hand-written `lib/supabase/types.ts`), run `npm run test:rls`, then recheck Phases 2 to 10 on the real database and tick boxes. Then Vercel deploy, PageSpeed on the live link, share a card and the `/colleges` link on WhatsApp, and tag phases whose "Done when" passes.
+Founder review: open the GitHub README, then follow [docs/SETUP.md](docs/SETUP.md) and [docs/DEMO.md](docs/DEMO.md). For a local demo, set `EMPIRE_TEST_MODE=1`, `NEXT_PUBLIC_EMPIRE_TEST_MODE=1`, `EMPIRE_DIST_DIR=.next-test` in a fresh PowerShell terminal, then `npm.cmd run dev -- --port 3200`. For phone access use `npm.cmd run dev -- --hostname 0.0.0.0 --port 3200`, same private Wi-Fi, printed Network address, quiz/oath, then **Test sign-in (local test mode)**. Complete a mission and check Path/Stats/Me. Close the terminal after stopping to discard switches. Do not run Playwright concurrently with this demo because both use `.next-test`.
+
+When the founder has Supabase: apply all eight migrations in `supabase/migrations/`, regenerate types (compare with the hand-written `lib/supabase/types.ts`), run `npm run test:rls`, then recheck Phases 2 to 10 on the real database and tick boxes. Verify complete export/error behavior before real users; decide financial-record retention with the founder's CA/lawyer before payments. Then Vercel deploy, PageSpeed on the live link, share a card and the `/colleges` link on WhatsApp, and tag phases whose "Done when" passes. Detailed boundaries are in `docs/OPERATIONS.md` and `docs/SECURITY.md`.
 
 ## Waiting on the founder
 
@@ -49,7 +53,7 @@ When the founder has Supabase: apply all eight migrations in `supabase/migration
 - War Room choices: a review covers the latest finished week and can be done until the next one opens; schedule and budget changes apply from tomorrow like Me edits; the focus pillar takes the third slot every day when it isn't in the top two.
 - Payments: reservation holders keep ₹299 even after 500 founder places are taken; founder places = students with a founder-price reservation or a paid founder-price pass.
 - Phase 6 questions from last session are still open (pack pillars, paywall once per device, reservations counting toward 500, repeat sign-ups fingerprint, Day-90 certificate).
-- The founder asked for "a portfolio as well". Still unclear what that means.
+- Portfolio scope is now clear and delivered: the founder asked for a Tvacha-style GitHub presentation and complete documentation for EMPIRE OS. This did not request a separate hosted personal portfolio website.
 - AI: the founder offered a Groq key. `docs/PRODUCT.md` keeps V1 free of AI calls ("AI chat coach" is in "Not in V1"). Any AI feature needs the founder's decision and a product-doc change first.
 
 ## Known problems
@@ -59,9 +63,14 @@ When the founder has Supabase: apply all eight migrations in `supabase/migration
 - Claude can't read `.env.local` (deny rule). `npm run test:rls` reports "Supabase isn't set up yet" until the founder fills it in.
 - The Supabase versions of the College HQ, War Room, demo and payment store methods compile but haven't run against a real database yet.
 - A guide page under Next.js 16 as a dynamic `[slug]` route hit an internal Next.js error in dev ("instant validation ... bug in Next.js"), so each guide is its own static page using `components/GuideArticle.tsx`.
+- Live export completeness needs a follow-up: `SupabaseSeasonStore.exportUser()` in `lib/server/store-supabase.ts` defaults several query errors/absent data to empty sections. A downloaded JSON file alone does not prove completeness. No runtime change was made in this documentation session.
+- Payment records currently reference profiles with `ON DELETE CASCADE` (`20261025140000_payments.sql`), so account deletion removes them. The founder and CA/lawyer need to decide the retention policy before taking payments; then implementation and live deletion tests must match it. Public college-demo requests are contact-based and are not removed through student account deletion; their operator retention process is also open.
+- Direct Chrome/Windows control was unavailable (native pipe unavailable). GitHub CLI/API verified publication; Playwright rendered the local application and README preview. This was not an actual-phone test. One capture run emitted a caret-style hydration warning; the subsequent corrected sequential capture runs completed without it.
 
 ## Notes for the next agent
 
+- **Documentation:** read `docs/README.md`; `docs/TESTING.md` distinguishes current checks from the historical 25 Oct evidence. `npm.cmd run docs:check` checks the authored links/images. `npm.cmd run screens:portfolio` refreshes six synthetic-data images through the existing tests; stop manual demos first. The scripts add no dependencies. On this Windows shell use `npm.cmd`/`npx.cmd` when `.ps1` wrappers are blocked.
+- **Local demo is memory, not PGlite:** PGlite only exercises SQL migrations in `tests/unit/db.test.ts`; the interactive/browser local mode uses `MemoryStore`. Restarting the dev server loses its records. `/api/test-login` creates a new pretend founder and replaces the current test identity, so use a separate private browser session for founder/college review.
 - **Local test mode.** `EMPIRE_TEST_MODE=1` swaps Supabase for an in-memory store (`lib/server/store-memory.ts`) and a pretend sign-in. Playwright runs its own server on port 3100 (`.next-test`). The cookie `empire_test_payments=1` turns on a stand-in Razorpay (`lib/server/payments-fake.ts`, `/api/test-pay`), test mode only.
 - **Server logic** lives in `lib/server/*-service.ts` behind `SeasonStore` (`lib/server/store.ts`): `college-service.ts` (+ pure `college-metrics.ts`, `college-sample.ts`), `war-room-service.ts`, `demo-service.ts`, `payment-service.ts` (+ `razorpay.ts`). Actions are thin wrappers in `app/actions/`.
 - **Deps** (`lib/server/deps.ts`): `{ store, now, payments }`. `payments` is the Razorpay gateway when live, else null; services check it.

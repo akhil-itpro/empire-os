@@ -2,6 +2,14 @@
 
 A diary of every working session, newest first. Whoever did the work (Claude or Codex) adds an entry before stopping, through `/handoff`. Where things stand right now is in `HANDOFF.md`.
 
+## 2026-10-26: Codex (GPT-6), GitHub portfolio and documentation
+
+- Built the EMPIRE OS portfolio README with a campaign-kit SVG cover, six real local app screens, feature/status table, architecture map and reviewer links. Added the documentation hub, case study, business hypotheses, architecture/API/setup/testing/security/operations/roadmap guides, three role manuals, contribution/private-reporting guides and issue/PR templates. Updated GitHub description and ten topics; repository remains private.
+- Verified 195 unit/database/service tests, all 57 functional browser scenarios, lint, typecheck and production build. The first optional College HQ capture followed a stale batch link; corrected the helper to await creation and use the current founder's batch list. Four capture journeys then passed; the final `screens:portfolio` command passed eleven existing journeys and produced six inspected images. Local documentation links/images passed; README rendered through GitHub's Markdown API. Hosted services and real-phone checks remain pending.
+- Added dependency-free `docs:check` and a reproducible `screens:portfolio` command. Source review documented live export error-reporting, payment-record cascade and demo-request retention follow-ups; no application service, route, schema or provider changes were made.
+- Commits: `c069d4a` (`[codex] Add EMPIRE OS portfolio and documentation`), plus the handoff checkpoint for this entry; ordinary pushes on `main` to `akhil-itpro/empire-os`.
+- Next: founder reviews the README and local/phone demo (`docs/SETUP.md`, `docs/DEMO.md`); Supabase/Google/Vercel setup and existing launch gates still apply. Read `HANDOFF.md` before continuing. No new implementation phase was started.
+
 ## 2026-10-25: Claude (Opus 5.5), Phases 7 to 10
 
 - Phase 7 College HQ: org, batch, invite, membership and reminder tables with RLS by organisation; join with consent and leave; paid batches give Season Pass access; overview, students, report, invite and poster pages; founder tools and a labelled sample batch.
