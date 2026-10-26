@@ -135,7 +135,7 @@ function JoinWithCode() {
           aria-describedby={error ? "batch-code-error" : undefined}
           className="h-13 min-w-0 flex-1 rounded-xl border-[1.5px] border-rule bg-ledger px-4 text-base tracking-wide text-bone placeholder:text-moss"
         />
-        <Button type="submit" variant="secondary" className="w-auto px-6">
+        <Button type="submit" variant="secondary" inline>
           Continue
         </Button>
       </form>

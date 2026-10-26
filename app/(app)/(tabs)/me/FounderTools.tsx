@@ -31,13 +31,13 @@ export function FounderTools({ days }: { days: number }) {
         Time travel moves only your own clock, to test the next day. It is {days === 0 ? "off" : `${days} ${days === 1 ? "day" : "days"} ahead`}.
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Button variant="secondary" className="h-11 text-sm" disabled={pending} onClick={() => travel(days + 1)}>
+        <Button variant="secondary" small disabled={pending} onClick={() => travel(days + 1)}>
           +1 day
         </Button>
-        <Button variant="secondary" className="h-11 text-sm" disabled={pending} onClick={() => travel(days + 7)}>
+        <Button variant="secondary" small disabled={pending} onClick={() => travel(days + 7)}>
           +7 days
         </Button>
-        <Button variant="quiet" className="h-11 text-sm" disabled={pending || days === 0} onClick={() => travel(0)}>
+        <Button variant="quiet" small disabled={pending || days === 0} onClick={() => travel(0)}>
           Today
         </Button>
       </div>

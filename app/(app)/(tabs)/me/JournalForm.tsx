@@ -34,7 +34,7 @@ export function JournalForm({ initial }: { initial: string }) {
       <div className="mt-2 flex items-center justify-between gap-3">
         <span className="text-xs text-moss tabular-nums">{text.length}/280</span>
         <div className="w-28">
-          <Button type="submit" variant="secondary" className="h-11 text-sm" disabled={pending || text.trim().length === 0}>
+          <Button type="submit" variant="secondary" small disabled={pending || text.trim().length === 0}>
             Save
           </Button>
         </div>
