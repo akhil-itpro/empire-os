@@ -2,6 +2,13 @@
 
 A diary of every working session, newest first. Whoever did the work (Claude or Codex) adds an entry before stopping, through `/handoff`. Where things stand right now is in `HANDOFF.md`.
 
+## 2026-11-01: Codex (GPT-6), repository presentation polish
+
+- With founder approval, shortened the README, moved the app gallery up, made College HQ visible, and condensed product/architecture/setup content while preserving branding, ownership, license and honest launch status. No new phase or application behavior change.
+- Refreshed six real local portfolio captures and visually reviewed them. The HQ portfolio image now uses a phone viewport after the completion notification has appeared and cleared; the capture helper waits for the server response, count, notification lifecycle and fonts. Full-page design-review capture remains available.
+- Checks: lint, typecheck, 214 unit/database/service tests across 14 files, documentation checks and all 12 portfolio journeys passed; the single HQ journey passed again after tightening the notification wait. GitHub Markdown rendering and diff whitespace checks passed. Updated testing/provenance notes; the latest full functional regression (58 scenarios) and production build remain Claude's 26 October records. Hosted services and real phones were not checked. Browser integration was unavailable; GitHub CLI access worked.
+- Commit: `cd0d005` (`[codex] Polish the repository overview and refresh app previews`), pushed to `main`; followed by the separate `[codex] Update handoff notes` checkpoint. Next: founder reviews the README on a phone, then the existing local app tour and Supabase/Vercel setup. No pull request or branch needs merging.
+
 ## 2026-10-26 (late afternoon): Claude (Opus 5.5), open items: Season 2 and fixes
 
 - Season 2: debrief on HQ after Day 90 with real numbers, "Start Season 2" (XP, rank, medals kept; no second free week; runs once). New migration for the `season_start` event; Founder HQ counts next seasons.

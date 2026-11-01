@@ -4,7 +4,7 @@ Whoever works on EMPIRE OS next (Claude or Codex) starts here. It is rewritten a
 
 ## Last updated
 
-2026-10-26 (late afternoon), by Claude (Opus 5.5). Two polish sessions after Phase 10: bug fixes, a React patch, a livelier HQ, twelve medals, then the open items (Season 2, Founder HQ sign-up dates, boss feedback, safer export, Day 1 = reveal preview). All implementation phases remain locally built, with live verification pending.
+2026-11-01, by Codex (GPT-6). The founder approved polishing the GitHub repository presentation. The README is shorter, the College HQ preview is visible, and the main app screenshot is a clean phone viewport. Application workflows remain locally built, with live verification pending.
 
 ## Current phase and step
 
@@ -21,22 +21,20 @@ All ten phases are built. What's left is going live, which needs the founder's a
 
 ## What this session did
 
-Session 1 (commits `faf954f` to `58ea1a2`): reviewed Codex's documentation commits (fine); fixed the quiz Back bounce from the reveal, the squashed batch-code field (Button `small`/`inline`), "1 ." list numbers; React 19.3.1; livelier HQ (week theme line, kind streak line, rising +XP, "Day N complete" ticket); twelve medals from real rows (`lib/game/medals.ts`, Stats `#medals`, HQ note and cards).
+- Confirmed the clean `main` checkout matched the live GitHub branch, read the rulebook and handoff, then obtained the founder's approval before editing.
+- Reworked `README.md`: gallery near the top, visible College HQ, four product differentiators, compact implementation/architecture/setup sections, and clear local-versus-live status. Preserved campaign-kit branding, ownership and license facts. No application route, service, migration or launch checkbox changed.
+- Refreshed all six portfolio captures and visually reviewed them. `student-hq.png` now uses a 390 × 844 viewport after one mission, once the real medal notification has appeared and disappeared. The full-page design-review image remains available under ignored `test-results/portfolio`.
+- Updated `docs/TESTING.md` and `docs/images/README.md` with current evidence and capture provenance. The README's old 195/57 counts are replaced by dated, accurate results. Browser integration was unavailable in this session; authenticated GitHub CLI access worked, and GitHub's Markdown renderer accepted the README.
+- **Checks run 1 November:** lint, typecheck, **214 unit/database/service tests across 14 files**, `docs:check`, and all **12** existing portfolio journeys passed. After tightening the notification wait, the single HQ journey passed again. GitHub Markdown rendering and `git diff --check` passed. The full 58-scenario functional regression and production build were last recorded by Claude on 26 October; they were not rerun for this documentation/capture-only change. Hosted services, RLS, real devices and Lighthouse remain unverified this session.
+- Presentation checkpoint: **`cd0d005`**, `[codex] Polish the repository overview and refresh app previews`, committed and pushed directly to `main` at `akhil-itpro/empire-os`. This handoff and the session-log entry have a separate `[codex]` checkpoint; no branch or pull request needs merging.
 
-Session 2, the founder said "complete and build open items" (commits `da2e537` to `4aa59a6`):
-
-- **Season 2:** `startNextSeason` (`season-service.ts`, action in `app/actions/season.ts`) after Day 90: new season from today, same plan, XP/rank/medals/history kept, no second free week, idempotent (store `startNewSeason(user, from, to, start)` only moves from the expected season). HQ shows a debrief when the season is finished (`SeasonDebrief` in `HqView.tsx`, numbers from `seasonDebrief()` in `lib/server/hq.ts`), with Share and "Start Season 2". New migration `20261026120000_season_start_event.sql` allows the `season_start` event; Founder HQ shows "Next seasons started".
-- **Founder HQ sign-ups** now come from profile creation (`created_at` in the profile's time zone; `MemoryStore.signups`), because `season_start` moves with Season 2.
-- **Boss mission:** `WarRoomCards` now lives inside `HqView` (prop `warRoom`) and reports to it: rising XP, rank-up moment, "Boss beaten" medal note.
-- **Export:** `SupabaseSeasonStore.exportUser()` throws on any failed query; the route answers 503 with a clear message; "Download my data" fetches first and shows success or the error on the page.
-- **Day 1 = reveal:** Season 1, Day 1 uses `PREVIEW_TIE_BREAK` (`lib/plan-engine/preview.ts`), unit-tested.
-- **Dev "1 Issue" badge explained:** Playwright's screenshot caret hiding styled inputs during hydration (test-only). All test screenshots now pass `caret: "initial"`. Reproduced twice before the fix, clean after.
-- Portfolio images refreshed (`student-hq.png`, `season-path.png` changed; the other four were identical). Docs updated: PRODUCT (After Day 90, Day 1 promise, Founder HQ), API, DEMO, OPERATIONS (nine migrations), SECURITY, student guide.
-- **Checks run today (late afternoon):** lint, typecheck, 214 unit tests (15 files incl. PGlite with the new migration), production build, `docs:check`, 58 functional browser scenarios plus screenshot journeys, all passing with a clean server log. Not run: hosted Supabase/RLS/auth/payments, Lighthouse, real phones.
+The previous implementation remains Claude's 26 October work: livelier HQ and twelve medals, Season 2 with retained XP/rank/medals and no second free week, Founder HQ sign-ups based on profile creation, boss feedback, export errors surfaced to the user, and Day 1 missions matching the reveal. Details and original checkpoints are in `docs/SESSION_LOG.md`.
 
 ## Next step
 
-Founder review on a phone in local test mode (`docs/DEMO.md`): Day 1 (missions, +XP, medals, Day complete ticket), Stats medals, Me (code field, Download my data), and Season 2: Me, Founder tools, "+7 days" thirteen times, then HQ shows "Season 1 complete" and "Start Season 2".
+Founder review of the repository on a phone: sign in to GitHub, open https://github.com/akhil-itpro/empire-os, scroll through the README's three app screens and College HQ, then expand "See the season map and landing page". Tap images to inspect them. The repo is private; this is a portfolio review, not a live app link.
+
+Then continue the existing phone review in local test mode (`docs/DEMO.md`): Day 1 (missions, +XP, medals, Day complete ticket), Stats medals, Me (code field, Download my data), and Season 2: Me, Founder tools, "+7 days" thirteen times, then HQ shows "Season 1 complete" and "Start Season 2".
 
 When the founder has Supabase: apply all **nine** migrations in `supabase/migrations/`, regenerate types (compare with `lib/supabase/types.ts`), run `npm run test:rls`, then recheck Phases 2 to 10 on the real database, including the medal counts, `startNewSeason`, the Founder HQ sign-up query and a full data export. Decide financial-record retention with the founder's CA/lawyer before payments. Then Vercel deploy, PageSpeed on the live link, share a card and `/colleges` on WhatsApp, and tag phases whose "Done when" passes. Boundaries are in `docs/OPERATIONS.md` and `docs/SECURITY.md`.
 
@@ -72,6 +70,8 @@ When the founder has Supabase: apply all **nine** migrations in `supabase/migrat
 
 ## Notes for the next agent
 
+- **Repository presentation:** `npm.cmd run screens:portfolio` now runs twelve existing onboarding/capture journeys (the Season 2 debrief adds the fifth screen journey). The curated HQ source is `hq-2-one-done-viewport.png`. Keep the wait for the medal notification to become visible before waiting for it to disappear; completion count alone is optimistic. Keep `caret: "initial"`.
+- **Evidence dates:** the latest full browser regression/build are Claude's 26 October records; the 1 November checks covered lint, types, 214 unit tests/14 files, docs and portfolio journeys. Do not treat the portfolio capture run as all functional scenarios or a live service check.
 - **Button sizing:** `cn()` (`lib/cn.ts`) only joins classes. Never pass a width, height or text size to `Button` in `className`; use `small` / `inline`. `tailwind-merge` was rejected: it drops `leading-*` when a later `text-[..]` size appears.
 - **Seasons:** `profile.seasonNumber`/`seasonStart` are the current season. Stats and Path read from `seasonStart`; medals and XP read every season. Founder metrics must never use `season_start` as a sign-up date.
 - **Medals:** rules in `lib/game/medals.ts`; server glue in `lib/server/medal-service.ts`. New medals for a mission are found by recomputing with that row still open.
