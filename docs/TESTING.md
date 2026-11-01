@@ -4,34 +4,34 @@ EMPIRE OS has domain/service tests, migration-backed database checks and browser
 
 [Documentation hub](README.md) · [Setup](SETUP.md) · [Reviewer tour](DEMO.md) · [Security](SECURITY.md)
 
-## Current verification: 26 October 2026
+## Current verification: 1 November 2026
 
-The documentation session reran these local checks:
+The repository-presentation session ran these local checks:
 
 | Check | Result | Scope |
 | --- | --- | --- |
 | `npm run lint` | Passed | Current working-tree ESLint check |
 | `npm run typecheck` | Passed | Next.js route types and TypeScript |
-| `npm test` | 195 passed across 13 files | Domain/service tests and PGlite migration checks |
-| Functional browser scenarios | 57 passed | All non-capture scenarios in the combined local Chromium run |
-| Screenshot journeys | 4 passed after helper correction | Targeted run; also included in the 11-journey portfolio capture command |
-| `npm run build` | Passed | Production compilation and route generation; no live service check |
+| `npm test` | 214 passed across 14 files | Domain/service tests and PGlite migration checks |
+| `npm run screens:portfolio` | 12 passed | Seven onboarding scenarios and five screenshot journeys; six gallery assets refreshed |
 | `npm run docs:check` | Passed | Local Markdown links, heading fragments and image references |
 
-The first screenshot-enabled combined run produced 60 passes, one optional capture failure and one deliberately skipped marketing capture. The capture failure opened an older sample batch before the new founder's creation/refresh finished. The helper now waits for success and opens the current founder's membership-scoped batch list; the four capture journeys then passed. Tab captures also wait for streamed headings and fonts. No application routes, services or migrations changed.
+The HQ capture now waits for the mission response, completion count, medal notification to appear and disappear, and fonts before saving the portfolio viewport. The viewport keeps fixed navigation at the bottom, with no transient notification covering a ticket. The original full-page design-review capture is also retained. No application routes, services or migrations changed.
 
-`npm run screens:portfolio` runs eleven existing funnel/capture journeys sequentially and curates six documentation images. It passed after the helper correction. The local documentation checker does not fetch external URLs, read environment-file contents or validate every Markdown construct. Reference-style links and anchors in non-Markdown targets are outside its scope. See the final [handoff](../HANDOFF.md) and [session log](SESSION_LOG.md).
+The twelve-journey portfolio command passed, then the single HQ journey passed again after tightening the notification wait to require both appearance and disappearance. All six curated images were visually reviewed. GitHub's Markdown renderer also accepted the updated README.
+
+The full functional browser regression and production build were not rerun for this documentation and capture-only change; their latest recorded results are below. The local documentation checker does not fetch external URLs, read environment-file contents or validate every Markdown construct. Reference-style links and anchors in non-Markdown targets are outside its scope. See the [handoff](../HANDOFF.md) and [session log](SESSION_LOG.md).
 
 ## Previous recorded evidence
 
-The previous session's [handoff](../HANDOFF.md) and [session log](SESSION_LOG.md) record these results on **25 October 2026**:
+Claude's late-afternoon [session log](SESSION_LOG.md) records these results on **26 October 2026**, after the Season 2 and export fixes:
 
 | Check | Recorded result | Environment / limit |
 | --- | --- | --- |
 | `npm run lint` | Passed | ESLint against the local working tree |
 | `npm run typecheck` | Passed | Next.js route type generation and TypeScript |
-| `npm test` | 195 tests passed | Vitest, including PGlite migration tests and in-memory service tests |
-| `npm run test:e2e` | 57 passed, 5 screenshot scenarios skipped | Chromium at a 390 × 844 viewport, local test server |
+| `npm test` | 214 tests passed | Vitest, including PGlite migration tests and in-memory service tests |
+| Functional browser scenarios | 58 passed plus screenshot journeys | Chromium at a 390 × 844 viewport, local test server |
 | `npm run build` | Passed | Production compilation; not a live deployment |
 | `npm run test:rls` | Pending real Supabase setup | Hosted users, RLS and college isolation still need verification |
 

@@ -11,9 +11,16 @@ test.skip(!dir, "Set SHOTS_DIR to save screenshots.");
 test("HQ through a day", async ({ page, context }) => {
   await startSeason(page);
   await page.screenshot({ caret: "initial", path: `${dir}/hq-1-start.png`, fullPage: true });
+  const completion = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/hq"));
   await page.getByRole("button", { name: /^Mark done:/ }).first().click();
-  await page.waitForTimeout(900);
+  await completion;
+  await expect(page.getByText("1 of 3 done", { exact: true })).toBeVisible();
+  // Let the real completion feedback finish before taking the portfolio image.
+  await expect(page.getByText("Medal earned: ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Medal earned: ", { exact: true })).not.toBeVisible({ timeout: 10_000 });
+  await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ caret: "initial", path: `${dir}/hq-2-one-done.png`, fullPage: true });
+  await page.screenshot({ caret: "initial", path: `${dir}/hq-2-one-done-viewport.png` });
   await page.getByRole("button", { name: /Open details/ }).nth(1).click();
   await page.waitForTimeout(400);
   await page.screenshot({ caret: "initial", path: `${dir}/hq-3-sheet.png` });

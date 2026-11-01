@@ -24,7 +24,7 @@ mkdirSync(outputDir, { recursive: true });
 const gallery = {
   "01-landing.png": "landing.png",
   "07-reveal.png": "archetype.png",
-  "hq-2-one-done.png": "student-hq.png",
+  "hq-2-one-done-viewport.png": "student-hq.png",
   "path-viewport.png": "season-path.png",
   "war-room-viewport.png": "war-room.png",
   "college-overview-laptop.png": "college-hq.png",
