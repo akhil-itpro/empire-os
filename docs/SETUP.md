@@ -7,8 +7,8 @@ This guide covers the local reviewer demo and the work still needed for a live d
 ## Requirements
 
 - Node.js **24.x**, as specified in [package.json](../package.json), with npm.
-- Access to this private GitHub repository and a local checkout.
-- A terminal opened in the project folder, such as `D:\EmpireOS` on the founder's computer.
+- A local checkout of this repository (`git clone https://github.com/akhil-itpro/empire-os.git`).
+- A terminal opened in the project folder, such as `empire-os`.
 - Chromium installed by Playwright only if running browser tests or generating screenshots.
 
 The examples use Windows PowerShell. `npm.cmd` and `npx.cmd` avoid the PowerShell restriction that can prevent `npm.ps1` from running; no execution-policy change is needed. Other terminals can use `npm` and `npx`.

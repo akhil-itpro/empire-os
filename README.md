@@ -12,7 +12,7 @@ Built for students and freshers in India, with **College HQ** for training and p
 
 [Take the reviewer tour](docs/DEMO.md) · [Read the case study](docs/CASE_STUDY.md) · [Explore the architecture](docs/ARCHITECTURE.md) · [Documentation](docs/README.md)
 
-**Status:** built and tested locally; live Supabase, sign-in, Vercel and Razorpay verification are pending. There is no verified public demo. This repository is private, and screenshots use fictional local test data.
+**Status:** built and tested locally; live Supabase, sign-in, Vercel and Razorpay verification are pending. There is no verified public demo; the source is public, and screenshots use fictional local test data.
 
 ## See the app
 
